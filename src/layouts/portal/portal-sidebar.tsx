@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LayoutTemplateIcon,
   LogOut,
+  Menu,
   SettingsIcon,
   ZapIcon,
 } from "lucide-react";
@@ -49,6 +50,12 @@ const diningSpaceNavItems = [
 const itemNavItems = [
   { title: "Item Types", url: "/item-types", icon: FileTextIcon },
   { title: "Items", url: "/items", icon: CreditCardIcon },
+];
+
+const menuNavItems = [
+  { title: "Menu Types", url: "/menu-types", icon: Menu },
+  { title: "Menu Category", url: "/menu-categories", icon: SettingsIcon },
+  { title: "Dishes", url: "/dishes", icon: SettingsIcon },
 ];
 
 const commonNavItems = [
@@ -117,6 +124,23 @@ export function PortalSidebar() {
             <SidebarGroupLabel>Items</SidebarGroupLabel>
             <SidebarMenu className="gap-2">
               {itemNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButtonActive
+                    icon={<item.icon />}
+                    title={item.title}
+                    url={item.url}
+                  />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarGroupLabel>Menu</SidebarGroupLabel>
+            <SidebarMenu className="gap-2">
+              {menuNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButtonActive
                     icon={<item.icon />}

@@ -53,6 +53,44 @@ export interface ShopItemCategory {
   shop_item_category_locales?: ShopItemCategoryLocale[];
 }
 
+export interface ItemCategoryLocaleInDetail {
+  id: number;
+  locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface SubCategoryInDetail {
+  id: number;
+  item_type_id: number;
+  code: string;
+  sort_order: number;
+  locales: ItemCategoryLocaleInDetail[];
+}
+
+export interface ItemLocaleInDetail {
+  id: number;
+  locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface ItemInDetail {
+  id: number;
+  item_type_id: number;
+  unit_id: number;
+  sort_order: number;
+  locales: ItemLocaleInDetail[];
+}
+
+export interface ItemCategoryDetail extends ItemCategory {
+  locales: ItemCategoryLocaleInDetail[];
+  sub_categories: SubCategoryInDetail[];
+  items: ItemInDetail[];
+}
+
 export const itemCategoriesService = {
   async list(itemTypeId: number, params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
     const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
@@ -72,8 +110,8 @@ export const itemCategoriesService = {
     return api.get<PageResponse<ItemCategory>>(`/item-types/${itemTypeId}/item-categories/${categoryId}/sub-categories?${query}`);
   },
 
-  async get(itemTypeId: number, id: number): Promise<{ item_category: ItemCategory }> {
-    return api.get<{ item_category: ItemCategory }>(`/item-types/${itemTypeId}/item-categories/${id}`);
+  async get(itemTypeId: number, id: number): Promise<{ item_category: ItemCategoryDetail }> {
+    return api.get<{ item_category: ItemCategoryDetail }>(`/item-types/${itemTypeId}/item-categories/${id}`);
   },
 
   async create(itemTypeId: number, body: CreateItemCategoryRequest): Promise<MutationResponse> {

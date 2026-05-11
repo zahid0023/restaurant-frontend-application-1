@@ -32,7 +32,7 @@ export default function PortalLayout({
         <PortalSidebar />
         <div className="flex flex-1 flex-col">
           <PortalHeader />
-          <main className="flex-1 overflow-auto bg-muted/30 p-6">
+          <main className="relative flex-1 overflow-auto bg-muted/30 p-6">
             {children}
           </main>
         </div>
