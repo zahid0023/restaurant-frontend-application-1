@@ -1,4 +1,4 @@
-export type FloorDialogMode = "create" | "edit" | "view";
+export type FloorDialogMode = "create" | "view";
 
 export interface FloorLocaleRow {
   id?: number;

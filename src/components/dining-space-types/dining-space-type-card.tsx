@@ -1,4 +1,6 @@
-import { Pencil, Trash2, Eye } from "lucide-react";
+"use client";
+
+import { Eye, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,7 +10,6 @@ export interface DiningSpaceTypeCardProps {
   diningSpaceType: DiningSpaceType;
   defaultName?: string;
   onView?: (dst: DiningSpaceType) => void;
-  onEdit?: (dst: DiningSpaceType) => void;
   onDelete?: (dst: DiningSpaceType) => void;
 }
 
@@ -16,15 +17,26 @@ export function DiningSpaceTypeCard({
   diningSpaceType,
   defaultName,
   onView,
-  onEdit,
   onDelete,
 }: DiningSpaceTypeCardProps) {
   const dst = diningSpaceType;
   const title = defaultName?.trim() || dst.code;
   const subtitle = defaultName?.trim() ? `${dst.code} · ID #${dst.id}` : `ID #${dst.id}`;
 
+  const handleAction = (e: React.MouseEvent, handler?: (d: DiningSpaceType) => void) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handler?.(dst);
+  };
+
   return (
-    <Card className="p-5 hover:shadow-md transition-shadow flex flex-col gap-4">
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => onView?.(dst)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(dst); } }}
+      className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
@@ -35,34 +47,28 @@ export function DiningSpaceTypeCard({
             <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
           </div>
         </div>
-        <Badge variant="secondary" className="shrink-0">#{dst.sort_order}</Badge>
-      </div>
-
-      {(onView || onEdit || onDelete) && (
-        <div className="flex items-center justify-end gap-1 pt-2 border-t -mx-5 px-5 -mb-5 pb-3">
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
           {onView && (
-            <Button variant="ghost" size="icon" aria-label="View" onClick={() => onView(dst)}>
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
-          {onEdit && (
-            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => onEdit(dst)}>
-              <Pencil className="h-4 w-4" />
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => handleAction(e, onView)}>
+              <Eye className="h-3.5 w-3.5" />
             </Button>
           )}
           {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete"
-              onClick={() => onDelete(dst)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => handleAction(e, onDelete)}>
+              <Trash2 className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
-      )}
+      </div>
+
+      <div className="mt-4 pt-3 border-t flex items-center justify-between">
+        <Badge variant="secondary">#{dst.sort_order}</Badge>
+        <span className="text-xs text-muted-foreground">{dst.locales.length} locale{dst.locales.length !== 1 ? "s" : ""}</span>
+      </div>
     </Card>
   );
 }

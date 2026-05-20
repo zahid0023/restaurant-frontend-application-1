@@ -1,12 +1,6 @@
 import { api } from "./api";
 import type { MutationResponse, PageResponse, ListParams } from "./common";
 
-export interface DiningSpaceType {
-  id: number;
-  code: string;
-  sort_order: number;
-}
-
 export interface DiningSpaceTypeLocale {
   id: number;
   locale_id: number;
@@ -15,8 +9,21 @@ export interface DiningSpaceTypeLocale {
   sort_order: number;
 }
 
+export interface DiningSpaceType {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales: DiningSpaceTypeLocale[];
+}
+
 export interface CreateDiningSpaceTypeLocaleRequest {
   locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface UpdateDiningSpaceTypeLocaleRequest {
   name: string;
   description?: string;
   sort_order: number;
@@ -29,13 +36,12 @@ export interface CreateDiningSpaceTypeRequest {
 }
 
 export interface UpdateDiningSpaceTypeRequest {
-  code: string;
   sort_order: number;
 }
 
 export const diningSpaceTypesService = {
   async list(params: ListParams = {}): Promise<PageResponse<DiningSpaceType>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
+    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
     return api.get<PageResponse<DiningSpaceType>>(`/dining-space-types?${query}`);
   },
@@ -56,21 +62,15 @@ export const diningSpaceTypesService = {
     return api.delete<MutationResponse>(`/dining-space-types/${id}`);
   },
 
-  async listLocales(typeId: number, params: ListParams = {}): Promise<PageResponse<DiningSpaceTypeLocale>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<DiningSpaceTypeLocale>>(`/dining-space-types/${typeId}/locales?${query}`);
-  },
-
   async addLocale(typeId: number, body: CreateDiningSpaceTypeLocaleRequest): Promise<MutationResponse> {
     return api.post<MutationResponse>(`/dining-space-types/${typeId}/locales`, body);
   },
 
-  async updateLocale(typeId: number, entryId: number, body: CreateDiningSpaceTypeLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/dining-space-types/${typeId}/locales/${entryId}`, body);
+  async updateLocale(typeId: number, localeId: number, body: UpdateDiningSpaceTypeLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dining-space-types/${typeId}/locales/${localeId}`, body);
   },
 
-  async removeLocale(typeId: number, entryId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/dining-space-types/${typeId}/locales/${entryId}`);
+  async removeLocale(typeId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dining-space-types/${typeId}/locales/${localeId}`);
   },
 };

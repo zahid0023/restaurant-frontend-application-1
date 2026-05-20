@@ -150,7 +150,7 @@ export default function UnitTypesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-stretch">
             <Select value={searchField} onValueChange={(v) => setSearchField(v as SearchField)}>
-              <SelectTrigger className="w-36 h-10 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-36 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -164,7 +164,7 @@ export default function UnitTypesPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={`${t("common.search")}…`}
-                className="pl-9 pr-9 w-64 h-10 rounded-l-none"
+                className="pl-9 pr-9 w-64 rounded-l-none"
               />
               {search && (
                 <button

@@ -169,7 +169,7 @@ export default function DishesPage() {
             value={selectedCategoryId ? String(selectedCategoryId) : ""}
             onValueChange={handleCategoryChange}
           >
-            <SelectTrigger className="w-56 h-10 bg-muted text-foreground">
+            <SelectTrigger className="w-56 bg-muted text-foreground">
               <SelectValue placeholder={t("dish.selectCategoryPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
@@ -189,7 +189,7 @@ export default function DishesPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={`${t("common.search")}…`}
-                  className="pl-9 pr-9 w-52 h-10"
+                  className="pl-9 pr-9 w-52"
                 />
                 {search && (
                   <button

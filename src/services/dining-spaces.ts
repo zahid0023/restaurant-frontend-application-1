@@ -1,16 +1,6 @@
 import { api } from "./api";
 import type { MutationResponse, PageResponse, ListParams } from "./common";
 
-export interface DiningSpace {
-  id: number;
-  dining_space_type_id: number;
-  floor_id: number | null;
-  code: string;
-  sort_order: number;
-  capacity: number;
-  is_bookable: boolean;
-}
-
 export interface DiningSpaceLocale {
   id: number;
   locale_id: number;
@@ -19,8 +9,25 @@ export interface DiningSpaceLocale {
   sort_order: number;
 }
 
+export interface DiningSpace {
+  id: number;
+  dining_space_type_id: number;
+  floor_id: number | null;
+  code: string;
+  sort_order: number;
+  capacity: number;
+  is_bookable: boolean;
+  locales: DiningSpaceLocale[];
+}
+
 export interface CreateDiningSpaceLocaleRequest {
   locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface UpdateDiningSpaceLocaleRequest {
   name: string;
   description?: string;
   sort_order: number;
@@ -37,9 +44,6 @@ export interface CreateDiningSpaceRequest {
 }
 
 export interface UpdateDiningSpaceRequest {
-  dining_space_type_id: number;
-  floor_id?: number | null;
-  code: string;
   sort_order: number;
   capacity: number;
   is_bookable: boolean;
@@ -47,7 +51,7 @@ export interface UpdateDiningSpaceRequest {
 
 export const diningSpacesService = {
   async list(params: ListParams = {}): Promise<PageResponse<DiningSpace>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
+    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
     return api.get<PageResponse<DiningSpace>>(`/dining-spaces?${query}`);
   },
@@ -68,21 +72,15 @@ export const diningSpacesService = {
     return api.delete<MutationResponse>(`/dining-spaces/${id}`);
   },
 
-  async listLocales(spaceId: number, params: ListParams = {}): Promise<PageResponse<DiningSpaceLocale>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<DiningSpaceLocale>>(`/dining-spaces/${spaceId}/locales?${query}`);
-  },
-
   async addLocale(spaceId: number, body: CreateDiningSpaceLocaleRequest): Promise<MutationResponse> {
     return api.post<MutationResponse>(`/dining-spaces/${spaceId}/locales`, body);
   },
 
-  async updateLocale(spaceId: number, entryId: number, body: CreateDiningSpaceLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/dining-spaces/${spaceId}/locales/${entryId}`, body);
+  async updateLocale(spaceId: number, localeId: number, body: UpdateDiningSpaceLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dining-spaces/${spaceId}/locales/${localeId}`, body);
   },
 
-  async removeLocale(spaceId: number, entryId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/dining-spaces/${spaceId}/locales/${entryId}`);
+  async removeLocale(spaceId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dining-spaces/${spaceId}/locales/${localeId}`);
   },
 };

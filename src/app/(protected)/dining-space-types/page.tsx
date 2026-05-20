@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,31 +27,16 @@ import {
   DiningSpaceTypeDialog,
   emptyDiningSpaceTypeForm,
 } from "@/components/dining-space-types/dining-space-type-dialog";
-import type {
-  DiningSpaceTypeDialogMode,
-  DiningSpaceTypeFormState,
-} from "@/components/dining-space-types/types";
-import { diningSpaceTypesService } from "@/services/dining-space-types";
-import type { DiningSpaceType, DiningSpaceTypeLocale } from "@/services/dining-space-types";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import type { DiningSpaceTypeDialogMode, DiningSpaceTypeFormState } from "@/components/dining-space-types/types";
+import { diningSpaceTypesService, type DiningSpaceType } from "@/services/dining-space-types";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 
 type SearchField = "all" | "code" | "name";
 
 export default function DiningSpaceTypesPage() {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language ?? "en";
-
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    name: t("common.localizedName"),
-  };
-
+  const { t } = useTranslation();
   const [types, setTypes] = useState<DiningSpaceType[]>([]);
-  const [typeLocaleRows, setTypeLocaleRows] = useState<Record<number, DiningSpaceTypeLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -68,20 +54,21 @@ export default function DiningSpaceTypesPage() {
     try {
       const res = await diningSpaceTypesService.list({ size: 50, sort_by: "sortOrder" });
       setTypes(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (dst) => {
-          try {
-            const loc = await diningSpaceTypesService.listLocales(dst.id, {
-              size: 50,
-              sort_by: "sortOrder",
-            });
-            return [dst.id, loc.data] as const;
-          } catch {
-            return [dst.id, [] as DiningSpaceTypeLocale[]] as const;
-          }
-        }),
-      );
-      setTypeLocaleRows(Object.fromEntries(entries));
+      setForm((prev) => {
+        if (!dialogOpen || activeId == null) return prev;
+        const updated = res.data.find((t) => t.id === activeId);
+        if (!updated) return prev;
+        return {
+          ...prev,
+          locales: updated.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        };
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -100,12 +87,11 @@ export default function DiningSpaceTypesPage() {
 
   const typeNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(typeLocaleRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const dst of types) {
+      out[dst.id] = dst.locales[0]?.name ?? "";
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [typeLocaleRows, locale]);
+  }, [types]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -128,26 +114,21 @@ export default function DiningSpaceTypesPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(dst: DiningSpaceType, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openView(dst: DiningSpaceType) {
+    setMode("view");
     setActiveId(dst.id);
-    setForm({ code: dst.code, sort_order: dst.sort_order, locales: [] });
+    setForm({
+      code: dst.code,
+      sort_order: dst.sort_order,
+      locales: dst.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    });
     setDialogOpen(true);
-    try {
-      const res = await diningSpaceTypesService.listLocales(dst.id, { size: 50 });
-      setForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
@@ -174,7 +155,7 @@ export default function DiningSpaceTypesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-stretch">
             <Select value={searchField} onValueChange={(v) => setSearchField(v as SearchField)}>
-              <SelectTrigger className="w-36 h-10 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-36 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -188,8 +169,8 @@ export default function DiningSpaceTypesPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
-                className="pl-9 pr-9 w-64 h-10 rounded-l-none"
+                placeholder={`${t("common.search")}…`}
+                className="pl-9 pr-9 w-64 rounded-l-none"
               />
               {search && (
                 <button
@@ -222,8 +203,7 @@ export default function DiningSpaceTypesPage() {
               key={dst.id}
               diningSpaceType={dst}
               defaultName={typeNames[dst.id]}
-              onView={(d) => openDetail(d, "view")}
-              onEdit={(d) => openDetail(d, "edit")}
+              onView={(d) => openView(d)}
               onDelete={(d) => setDeleteTarget(d)}
             />
           ))}
@@ -234,7 +214,6 @@ export default function DiningSpaceTypesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         typeId={activeId}
         form={form}
         onFormChange={setForm}

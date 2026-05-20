@@ -1,4 +1,6 @@
-import { Pencil, Trash2, Eye } from "lucide-react";
+"use client";
+
+import { Eye, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +13,6 @@ export interface DiningSpaceCardProps {
   typeLabel?: string;
   floorLabel?: string;
   onView?: (ds: DiningSpace) => void;
-  onEdit?: (ds: DiningSpace) => void;
   onDelete?: (ds: DiningSpace) => void;
 }
 
@@ -21,7 +22,6 @@ export function DiningSpaceCard({
   typeLabel,
   floorLabel,
   onView,
-  onEdit,
   onDelete,
 }: DiningSpaceCardProps) {
   const { t } = useTranslation();
@@ -30,8 +30,20 @@ export function DiningSpaceCard({
   const title = defaultName?.trim() || ds.code;
   const subtitle = defaultName?.trim() ? `${ds.code} · ID #${ds.id}` : `ID #${ds.id}`;
 
+  const handleAction = (e: React.MouseEvent, handler?: (d: DiningSpace) => void) => {
+    e.stopPropagation();
+    e.preventDefault();
+    handler?.(ds);
+  };
+
   return (
-    <Card className="p-5 hover:shadow-md transition-shadow flex flex-col gap-4">
+    <Card
+      role="button"
+      tabIndex={0}
+      onClick={() => onView?.(ds)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(ds); } }}
+      className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+    >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
@@ -42,15 +54,25 @@ export function DiningSpaceCard({
             <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
           </div>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <Badge variant="secondary">#{ds.sort_order}</Badge>
-          <Badge variant={ds.is_bookable ? "default" : "outline"} className="text-xs">
-            {ds.is_bookable ? t("diningSpace.bookable") : t("diningSpace.notBookable")}
-          </Badge>
+        <div
+          className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {onView && (
+            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => handleAction(e, onView)}>
+              <Eye className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          {onDelete && (
+            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={(e) => handleAction(e, onDelete)}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm">
+      <div className="grid grid-cols-2 gap-3 text-sm mt-4">
         <div>
           <p className="text-xs text-muted-foreground">{t("diningSpace.type")}</p>
           <p className="font-medium truncate">{typeLabel ?? `#${ds.dining_space_type_id}`}</p>
@@ -67,31 +89,15 @@ export function DiningSpaceCard({
         </div>
       </div>
 
-      {(onView || onEdit || onDelete) && (
-        <div className="flex items-center justify-end gap-1 pt-2 border-t -mx-5 px-5 -mb-5 pb-3">
-          {onView && (
-            <Button variant="ghost" size="icon" aria-label="View" onClick={() => onView(ds)}>
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
-          {onEdit && (
-            <Button variant="ghost" size="icon" aria-label="Edit" onClick={() => onEdit(ds)}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
-          {onDelete && (
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Delete"
-              onClick={() => onDelete(ds)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          )}
+      <div className="mt-4 pt-3 border-t flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">#{ds.sort_order}</Badge>
+          <Badge variant={ds.is_bookable ? "default" : "outline"} className="text-xs">
+            {ds.is_bookable ? t("diningSpace.bookable") : t("diningSpace.notBookable")}
+          </Badge>
         </div>
-      )}
+        <span className="text-xs text-muted-foreground">{ds.locales.length} locale{ds.locales.length !== 1 ? "s" : ""}</span>
+      </div>
     </Card>
   );
 }

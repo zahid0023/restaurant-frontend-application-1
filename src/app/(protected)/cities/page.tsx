@@ -166,7 +166,7 @@ export default function CitiesPage() {
 
         <div className="flex flex-wrap items-center gap-2">
           <Select value={selectedCountryId ? String(selectedCountryId) : ""} onValueChange={handleCountryChange}>
-            <SelectTrigger className="w-52 h-10">
+            <SelectTrigger className="w-52">
               <SelectValue placeholder={t("cities.selectCountry")} />
             </SelectTrigger>
             <SelectContent>
@@ -186,7 +186,7 @@ export default function CitiesPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder={`${t("common.search")}…`}
-                  className="pl-9 pr-9 w-56 h-10"
+                  className="pl-9 pr-9 w-56"
                 />
                 {search && (
                   <button

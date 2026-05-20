@@ -28,7 +28,7 @@ import {
 } from "@/components/dining-spaces/dining-space-dialog";
 import type { DiningSpaceDialogMode, DiningSpaceFormState } from "@/components/dining-spaces/types";
 import { diningSpacesService } from "@/services/dining-spaces";
-import type { DiningSpace, DiningSpaceLocale } from "@/services/dining-spaces";
+import type { DiningSpace } from "@/services/dining-spaces";
 import { floorsService } from "@/services/floors";
 import type { Floor } from "@/services/floors";
 import { diningSpaceTypesService } from "@/services/dining-space-types";
@@ -41,19 +41,9 @@ import { useTranslation } from "react-i18next";
 type SearchField = "all" | "code" | "name" | "type" | "floor";
 
 export default function DiningSpacesPage() {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language ?? "en";
-
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    name: t("common.localizedName"),
-    type: t("diningSpace.type"),
-    floor: t("diningSpace.floor"),
-  };
+  const { t } = useTranslation();
 
   const [spaces, setSpaces] = useState<DiningSpace[]>([]);
-  const [spaceLocaleRows, setSpaceLocaleRows] = useState<Record<number, DiningSpaceLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [availableFloors, setAvailableFloors] = useState<Floor[]>([]);
   const [availableTypes, setAvailableTypes] = useState<DiningSpaceType[]>([]);
@@ -73,17 +63,21 @@ export default function DiningSpacesPage() {
     try {
       const res = await diningSpacesService.list({ size: 50, sort_by: "sortOrder" });
       setSpaces(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (s) => {
-          try {
-            const loc = await diningSpacesService.listLocales(s.id, { size: 50, sort_by: "sortOrder" });
-            return [s.id, loc.data] as const;
-          } catch {
-            return [s.id, [] as DiningSpaceLocale[]] as const;
-          }
-        }),
-      );
-      setSpaceLocaleRows(Object.fromEntries(entries));
+      setForm((prev) => {
+        if (!dialogOpen || activeId == null) return prev;
+        const updated = res.data.find((s) => s.id === activeId);
+        if (!updated) return prev;
+        return {
+          ...prev,
+          locales: updated.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        };
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -101,22 +95,21 @@ export default function DiningSpacesPage() {
 
   const spaceNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(spaceLocaleRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const s of spaces) {
+      out[s.id] = s.locales[0]?.name ?? "";
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [spaceLocaleRows, locale]);
+  }, [spaces]);
 
   const typeMap = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const type of availableTypes) out[type.id] = type.code;
+    for (const type of availableTypes) out[type.id] = type.locales[0]?.name ?? type.code;
     return out;
   }, [availableTypes]);
 
   const floorMap = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const floor of availableFloors) out[floor.id] = floor.code;
+    for (const floor of availableFloors) out[floor.id] = floor.locales[0]?.name ?? floor.code;
     return out;
   }, [availableFloors]);
 
@@ -145,8 +138,8 @@ export default function DiningSpacesPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(s: DiningSpace, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openView(s: DiningSpace) {
+    setMode("view");
     setActiveId(s.id);
     setForm({
       dining_space_type_id: s.dining_space_type_id,
@@ -155,24 +148,15 @@ export default function DiningSpacesPage() {
       sort_order: s.sort_order,
       capacity: s.capacity,
       is_bookable: s.is_bookable,
-      locales: [],
+      locales: s.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
     });
     setDialogOpen(true);
-    try {
-      const res = await diningSpacesService.listLocales(s.id, { size: 50 });
-      setForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
@@ -199,7 +183,7 @@ export default function DiningSpacesPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-stretch">
             <Select value={searchField} onValueChange={(v) => setSearchField(v as SearchField)}>
-              <SelectTrigger className="w-36 h-10 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-36 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -215,8 +199,8 @@ export default function DiningSpacesPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
-                className="pl-9 pr-9 w-64 h-10 rounded-l-none"
+                placeholder={`${t("common.search")}…`}
+                className="pl-9 pr-9 w-64 rounded-l-none"
               />
               {search && (
                 <button
@@ -251,8 +235,7 @@ export default function DiningSpacesPage() {
               defaultName={spaceNames[s.id]}
               typeLabel={typeMap[s.dining_space_type_id]}
               floorLabel={s.floor_id != null ? floorMap[s.floor_id] : undefined}
-              onView={(space) => openDetail(space, "view")}
-              onEdit={(space) => openDetail(space, "edit")}
+              onView={openView}
               onDelete={(space) => setDeleteTarget(space)}
             />
           ))}
@@ -263,7 +246,6 @@ export default function DiningSpacesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         spaceId={activeId}
         form={form}
         onFormChange={setForm}

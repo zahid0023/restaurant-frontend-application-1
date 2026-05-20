@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,27 +25,15 @@ import {
 import { FloorCard } from "@/components/floors/floor-card";
 import { FloorDialog, emptyFloorForm } from "@/components/floors/floor-dialog";
 import type { FloorDialogMode, FloorFormState } from "@/components/floors/types";
-import { floorsService } from "@/services/floors";
-import type { Floor, FloorLocale } from "@/services/floors";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import { floorsService, type Floor } from "@/services/floors";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 
 type SearchField = "all" | "code" | "name";
 
 export default function FloorsPage() {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language ?? "en";
-
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    name: t("common.localizedName"),
-  };
-
+  const { t } = useTranslation();
   const [floors, setFloors] = useState<Floor[]>([]);
-  const [floorLocaleRows, setFloorLocaleRows] = useState<Record<number, FloorLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -62,17 +51,21 @@ export default function FloorsPage() {
     try {
       const res = await floorsService.list({ size: 50, sort_by: "sortOrder" });
       setFloors(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (f) => {
-          try {
-            const loc = await floorsService.listLocales(f.id, { size: 50, sort_by: "sortOrder" });
-            return [f.id, loc.data] as const;
-          } catch {
-            return [f.id, [] as FloorLocale[]] as const;
-          }
-        }),
-      );
-      setFloorLocaleRows(Object.fromEntries(entries));
+      setForm((prev) => {
+        if (!dialogOpen || activeId == null) return prev;
+        const updated = res.data.find((f) => f.id === activeId);
+        if (!updated) return prev;
+        return {
+          ...prev,
+          locales: updated.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        };
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -91,12 +84,11 @@ export default function FloorsPage() {
 
   const floorNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(floorLocaleRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const f of floors) {
+      out[f.id] = f.locales[0]?.name ?? "";
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [floorLocaleRows, locale]);
+  }, [floors]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -119,26 +111,21 @@ export default function FloorsPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(f: Floor, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openView(f: Floor) {
+    setMode("view");
     setActiveId(f.id);
-    setForm({ code: f.code, sort_order: f.sort_order, locales: [] });
+    setForm({
+      code: f.code,
+      sort_order: f.sort_order,
+      locales: f.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    });
     setDialogOpen(true);
-    try {
-      const res = await floorsService.listLocales(f.id, { size: 50 });
-      setForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
@@ -165,7 +152,7 @@ export default function FloorsPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-stretch">
             <Select value={searchField} onValueChange={(v) => setSearchField(v as SearchField)}>
-              <SelectTrigger className="w-36 h-10 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
+              <SelectTrigger className="w-36 rounded-r-none border-r-0 bg-muted text-foreground focus:ring-0 focus:ring-offset-0">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -179,8 +166,8 @@ export default function FloorsPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
-                className="pl-9 pr-9 w-64 h-10 rounded-l-none"
+                placeholder={`${t("common.search")}…`}
+                className="pl-9 pr-9 w-64 rounded-l-none"
               />
               {search && (
                 <button
@@ -213,8 +200,7 @@ export default function FloorsPage() {
               key={f.id}
               floor={f}
               defaultName={floorNames[f.id]}
-              onView={(floor) => openDetail(floor, "view")}
-              onEdit={(floor) => openDetail(floor, "edit")}
+              onView={(floor) => openView(floor)}
               onDelete={(floor) => setDeleteTarget(floor)}
             />
           ))}
@@ -225,7 +211,6 @@ export default function FloorsPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         floorId={activeId}
         form={form}
         onFormChange={setForm}

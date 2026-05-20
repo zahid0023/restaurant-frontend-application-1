@@ -1,4 +1,4 @@
-export type DiningSpaceDialogMode = "create" | "edit" | "view";
+export type DiningSpaceDialogMode = "create" | "view";
 
 export interface DiningSpaceLocaleRow {
   id?: number;
