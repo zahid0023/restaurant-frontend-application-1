@@ -133,6 +133,7 @@ export default function DishesPage() {
           description: l.description ?? "",
           sort_order: l.sort_order,
         })),
+        variants: [],
       });
     } catch (e) {
       toast.error((e as Error).message);

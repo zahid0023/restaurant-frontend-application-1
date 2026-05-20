@@ -193,7 +193,6 @@ export default function MenuTypesPage() {
               key={m.id}
               menuType={m}
               defaultName={menuTypeNames[m.id]}
-              href={`/menu-types/${m.id}`}
               onView={(mt) => openDetail(mt)}
               onDelete={(mt) => setDeleteTarget(mt)}
             />

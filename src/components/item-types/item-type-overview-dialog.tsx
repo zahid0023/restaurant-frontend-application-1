@@ -81,16 +81,7 @@ export function ItemTypeOverviewDialog({
     try {
       const res = await itemCategoriesService.list(itemTypeId, { size: 50, sort_by: "sortOrder" });
       setCategories(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (cat) => {
-          try {
-            const loc = await itemCategoriesService.listLocales(itemTypeId, cat.id, { size: 50, sort_by: "sortOrder" });
-            return [cat.id, loc.data] as const;
-          } catch {
-            return [cat.id, [] as ItemCategoryLocale[]] as const;
-          }
-        }),
-      );
+      const entries = res.data.map((cat) => [cat.id, cat.locales ?? []] as const);
       setCategoryLocaleRows(Object.fromEntries(entries));
     } catch (e) {
       toast.error((e as Error).message);
@@ -125,19 +116,16 @@ export function ItemTypeOverviewDialog({
     setActiveCatId(cat.id);
     setCatForm({ parent_id: cat.parent_id ?? null, code: cat.code, sort_order: cat.sort_order, locales: [] });
     setCatDialogOpen(true);
-    try {
-      const res = await itemCategoriesService.listLocales(itemTypeId, cat.id, { size: 50 });
-      setCatForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch { /* non-blocking */ }
+    setCatForm((prev) => ({
+      ...prev,
+      locales: (cat.locales ?? []).map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    }));
   }
 
   async function confirmDelete() {
@@ -285,6 +273,7 @@ export function ItemTypeOverviewDialog({
         category={overviewCat}
         categoryName={overviewCat ? categoryNames[overviewCat.id] : undefined}
         categoryDescription={overviewCat ? (categoryLocaleRows[overviewCat.id]?.[0]?.description ?? undefined) : undefined}
+        availableLocales={availableLocales}
         onEdit={(c) => openCatDetail(c, "edit")}
         onDelete={(c) => setDeleteTarget(c)}
         onAddSubcategory={() => overviewCat && openCreateCat(overviewCat.id)}
