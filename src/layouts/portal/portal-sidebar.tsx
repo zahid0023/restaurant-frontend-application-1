@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/sidebar";
 import { SidebarMenuButtonActive } from "@/layouts/portal/sidebar-menu-button-active";
 import { logout } from "@/services/auth";
+import { title } from "process";
 
 const mainNavItems = [
   {
@@ -49,6 +50,7 @@ const diningSpaceNavItems = [
 
 const itemNavItems = [
   { title: "Item Types", url: "/item-types", icon: FileTextIcon },
+  { title: "Item Categories", url: "/item-categories", icon: SettingsIcon },
   { title: "Items", url: "/items", icon: CreditCardIcon },
 ];
 
@@ -56,6 +58,11 @@ const menuNavItems = [
   { title: "Menu Types", url: "/menu-types", icon: Menu },
   { title: "Menu Category", url: "/menu-categories", icon: SettingsIcon },
   { title: "Dishes", url: "/dishes", icon: SettingsIcon },
+];
+
+const unitNavItems = [
+  { title: "Unit Types", url: "/unit-types", icon: FileTextIcon },
+  { title: "Units", url: "/units", icon: CreditCardIcon },
 ];
 
 const commonNavItems = [
@@ -141,6 +148,23 @@ export function PortalSidebar() {
             <SidebarGroupLabel>Menu</SidebarGroupLabel>
             <SidebarMenu className="gap-2">
               {menuNavItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButtonActive
+                    icon={<item.icon />}
+                    title={item.title}
+                    url={item.url}
+                  />
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupContent>
+            <SidebarGroupLabel>Units</SidebarGroupLabel>
+            <SidebarMenu className="gap-2">
+              {unitNavItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButtonActive
                     icon={<item.icon />}

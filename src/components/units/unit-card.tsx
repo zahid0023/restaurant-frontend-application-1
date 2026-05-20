@@ -1,45 +1,44 @@
 "use client";
 
-import { Eye, Trash2, Tag } from "lucide-react";
+import { Eye, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
-import type { ItemSummary } from "@/services/items";
+import type { Unit } from "@/services/units";
 
-export interface ItemCardProps {
-  item: ItemSummary;
+export interface UnitCardProps {
+  unit: Unit;
   defaultName?: string;
-  onView?: (item: ItemSummary) => void;
-  onDelete?: (item: ItemSummary) => void;
-  onAssignCategories?: (item: ItemSummary) => void;
+  onView?: (u: Unit) => void;
+  onDelete?: (u: Unit) => void;
 }
 
-export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategories }: ItemCardProps) {
+export function UnitCard({ unit, defaultName, onView, onDelete }: UnitCardProps) {
   const { t } = useTranslation();
+  const u = unit;
 
-  const title = defaultName?.trim() || item.code;
-  const subtitle = defaultName?.trim() ? `${item.code} · ID #${item.id}` : `ID #${item.id}`;
+  const title = defaultName?.trim() || u.code;
+  const subtitle = defaultName?.trim() ? `${u.code} · ID #${u.id}` : `ID #${u.id}`;
 
-  const handleAction = (e: React.MouseEvent, handler?: (i: ItemSummary) => void) => {
+  const handleAction = (e: React.MouseEvent, handler?: (u: Unit) => void) => {
     e.stopPropagation();
     e.preventDefault();
-    handler?.(item);
+    handler?.(unit);
   };
 
   return (
     <Card
       role="button"
       tabIndex={0}
-      onClick={() => onView?.(item)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(item); } }}
+      onClick={() => onView?.(u)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(u); } }}
       className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
-            {item.code.slice(0, 4)}
+            {u.code.slice(0, 4)}
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold truncate">{title}</h3>
@@ -64,37 +63,20 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
         </div>
       </div>
 
-      {/* General information */}
       <div className="grid grid-cols-2 gap-3 text-sm mt-4">
         <div>
-          <p className="text-xs text-muted-foreground">{t("item.unitType")}</p>
-          <p className="font-medium">{item.unit?.unit_type?.code ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{t("unit.isBase")}</p>
+          <p className="font-medium">{u.is_base ? t("unit.base") : t("unit.notBase")}</p>
         </div>
         <div>
-          <p className="text-xs text-muted-foreground">{t("item.unit")}</p>
-          <p className="font-medium font-mono">{item.unit?.code ?? "—"}</p>
+          <p className="text-xs text-muted-foreground">{t("common.code")}</p>
+          <p className="font-medium font-mono">{u.code}</p>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary">#{item.sort_order}</Badge>
-          {onAssignCategories && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 text-xs gap-1 px-2 text-muted-foreground hover:text-foreground"
-              onClick={(e) => handleAction(e, onAssignCategories)}
-            >
-              <Tag className="h-3 w-3" />
-              {t("shopItem.assignCategories")}
-            </Button>
-          )}
-        </div>
-        <span className="text-xs text-muted-foreground">
-          {item.locales.length} {item.locales.length !== 1 ? t("shopItem.locales") : t("shopItem.locale")}
-        </span>
+        <Badge variant="secondary">#{u.sort_order}</Badge>
+        <span className="text-xs text-muted-foreground">{u.locales.length} locale{u.locales.length !== 1 ? "s" : ""}</span>
       </div>
     </Card>
   );

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,41 +22,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ItemCard } from "@/components/items/item-card";
-import { ItemDialog, emptyItemForm } from "@/components/items/item-dialog";
-import { AssignCategoriesDialog } from "@/components/items/assign-categories-dialog";
-import type { ItemDialogMode, ItemFormState } from "@/components/items/types";
-import { itemsService } from "@/services/items";
-import type { ItemSummary } from "@/services/items";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import { UnitTypeCard } from "@/components/unit-types/unit-type-card";
+import { UnitTypeDialog, emptyUnitTypeForm } from "@/components/unit-types/unit-type-dialog";
+import type { UnitTypeDialogMode, UnitTypeFormState } from "@/components/unit-types/types";
+import { unitTypesService, type UnitType, type UnitTypeSummary } from "@/services/unit-types";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 
-type SearchField = "all" | "code" | "name";
+type SearchField = "all" | "code";
 
-export default function ItemsPage() {
+export default function UnitTypesPage() {
   const { t } = useTranslation();
 
-  const [items, setItems] = useState<ItemSummary[]>([]);
+  const [unitTypes, setUnitTypes] = useState<UnitTypeSummary[]>([]);
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchField, setSearchField] = useState<SearchField>("all");
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [mode, setMode] = useState<ItemDialogMode>("create");
+  const [mode, setMode] = useState<UnitTypeDialogMode>("create");
   const [activeId, setActiveId] = useState<number | undefined>(undefined);
-  const [form, setForm] = useState<ItemFormState>(emptyItemForm);
+  const [form, setForm] = useState<UnitTypeFormState>(emptyUnitTypeForm);
 
-  const [deleteTarget, setDeleteTarget] = useState<ItemSummary | null>(null);
-  const [assignTarget, setAssignTarget] = useState<ItemSummary | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<UnitTypeSummary | null>(null);
 
   async function refresh() {
     setLoading(true);
     try {
-      const res = await itemsService.list({ size: 50, sort_by: "sortOrder" });
-      setItems(res.data);
+      const res = await unitTypesService.list({ size: 50, sort_by: "sortOrder" });
+      setUnitTypes(res.data);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -69,51 +65,30 @@ export default function ItemsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const itemNames = useMemo(() => {
-    const out: Record<number, string> = {};
-    for (const item of items) {
-      out[item.id] = item.locales[0]?.name ?? "";
-    }
-    return out;
-  }, [items]);
-
-  const filtered = useMemo(() => {
+  const filtered = unitTypes.filter((ut) => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) => {
-      const code = item.code.toLowerCase();
-      const name = (itemNames[item.id] ?? "").toLowerCase();
-      switch (searchField) {
-        case "code": return code.includes(q);
-        case "name": return name.includes(q);
-        default: return code.includes(q) || name.includes(q);
-      }
-    });
-  }, [items, itemNames, search, searchField]);
+    if (!q) return true;
+    return ut.code.toLowerCase().includes(q);
+  });
 
   function openCreate() {
     setMode("create");
     setActiveId(undefined);
-    setForm(emptyItemForm);
+    setForm(emptyUnitTypeForm);
     setDialogOpen(true);
   }
 
-  async function openDetail(item: ItemSummary) {
+  async function openView(ut: UnitTypeSummary) {
     setMode("view");
-    setActiveId(item.id);
-    setForm({
-      code: item.code,
-      unit_type_id: item.unit?.unit_type?.id ?? "",
-      unit_id: item.unit?.id ?? "",
-      sort_order: item.sort_order,
-      locales: [],
-    });
+    setActiveId(ut.id);
+    setForm({ code: ut.code, sort_order: ut.sort_order, locales: [] });
     setDialogOpen(true);
     try {
-      const res = await itemsService.get(item.id);
-      const full = res.item;
-      setForm((prev) => ({
-        ...prev,
+      const res = await unitTypesService.get(ut.id);
+      const full: UnitType = res.unit_type;
+      setForm({
+        code: full.code,
+        sort_order: full.sort_order,
         locales: full.locales.map((l) => ({
           id: l.id,
           locale_id: l.locale_id,
@@ -121,15 +96,41 @@ export default function ItemsPage() {
           description: l.description ?? "",
           sort_order: l.sort_order,
         })),
-      }));
-    } catch { /* non-blocking */ }
+      });
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function handleSaved() {
+    await refresh();
+    // If dialog is open and viewing an existing item, re-fetch its locales
+    if (activeId != null && dialogOpen) {
+      try {
+        const res = await unitTypesService.get(activeId);
+        const full: UnitType = res.unit_type;
+        setForm((prev) => ({
+          ...prev,
+          sort_order: full.sort_order,
+          locales: full.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        }));
+      } catch {
+        /* non-blocking */
+      }
+    }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await itemsService.remove(deleteTarget.id);
-      toast.success(`${t("item.deletedToast")} ${deleteTarget.code}`);
+      await unitTypesService.remove(deleteTarget.id);
+      toast.success(`${t("unitType.deletedToast")} ${deleteTarget.code}`);
       setDeleteTarget(null);
       await refresh();
     } catch (err) {
@@ -137,19 +138,13 @@ export default function ItemsPage() {
     }
   }
 
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    name: t("common.localizedName"),
-  };
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("common.admin")}</p>
-          <h1 className="text-3xl font-semibold tracking-tight">{t("item.pageTitle")}</h1>
-          <p className="text-muted-foreground text-sm mt-1">{t("item.pageSubtitle")}</p>
+          <h1 className="text-3xl font-semibold tracking-tight">{t("unitType.pageTitle")}</h1>
+          <p className="text-muted-foreground text-sm mt-1">{t("unitType.pageSubtitle")}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -161,7 +156,6 @@ export default function ItemsPage() {
               <SelectContent>
                 <SelectItem value="all">{t("common.allFields")}</SelectItem>
                 <SelectItem value="code">{t("common.code")}</SelectItem>
-                <SelectItem value="name">{t("common.localizedName")}</SelectItem>
               </SelectContent>
             </Select>
             <div className="relative">
@@ -169,7 +163,7 @@ export default function ItemsPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
+                placeholder={`${t("common.search")}…`}
                 className="pl-9 pr-9 w-64 h-10 rounded-l-none"
               />
               {search && (
@@ -185,55 +179,48 @@ export default function ItemsPage() {
             </div>
           </div>
           <Button onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1.5" /> {t("item.new")}
+            <Plus className="h-4 w-4 mr-1.5" /> {t("unitType.new")}
           </Button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">{t("item.loading")}</div>
+        <div className="text-center py-16 text-muted-foreground">{t("unitType.loading")}</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground border rounded-xl border-dashed">
-          {t("item.empty")}
+          {t("unitType.empty")}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              defaultName={itemNames[item.id]}
-              onView={(i) => openDetail(i)}
-              onDelete={(i) => setDeleteTarget(i)}
-              onAssignCategories={(i) => setAssignTarget(i)}
+          {filtered.map((ut) => (
+            <UnitTypeCard
+              key={ut.id}
+              unitType={ut}
+              onView={(item) => openView(item)}
+              onDelete={(item) => setDeleteTarget(item)}
             />
           ))}
         </div>
       )}
 
-      <ItemDialog
+      <UnitTypeDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        itemId={activeId}
+        unitTypeId={activeId}
         form={form}
         onFormChange={setForm}
         availableLocales={availableLocales}
-        onSaved={refresh}
-      />
-
-      <AssignCategoriesDialog
-        open={!!assignTarget}
-        onOpenChange={(o) => !o && setAssignTarget(null)}
-        itemId={assignTarget?.id ?? 0}
-        itemName={assignTarget ? (itemNames[assignTarget.id] || assignTarget.code) : undefined}
+        onSaved={handleSaved}
       />
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t("item.deleteTitle")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("item.deleteDesc")}</AlertDialogDescription>
+            <AlertDialogTitle>{t("unitType.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("unitType.deleteDesc", { code: deleteTarget?.code ?? "" })}
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>

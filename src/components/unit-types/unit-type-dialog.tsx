@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Check, Languages, Layers, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Check, Languages, Pencil, Plus, Ruler, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,62 +22,51 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { itemCategoriesService } from "@/services/item-categories";
-import type { ItemCategory } from "@/services/item-categories";
+import { unitTypesService } from "@/services/unit-types";
 import type { Locale } from "@/services/locales";
 import { toast } from "sonner";
-import type { ItemCategoryDialogMode, ItemCategoryFormState, ItemCategoryLocaleRow } from "./types";
+import type { UnitTypeDialogMode, UnitTypeFormState, UnitTypeLocaleRow } from "./types";
 
-export const emptyItemCategoryForm: ItemCategoryFormState = {
-  parent_id: null,
+export const emptyUnitTypeForm: UnitTypeFormState = {
   code: "",
   sort_order: 0,
   locales: [],
 };
 
-const NO_PARENT = "__none__";
-
-export interface ItemCategoryDialogProps {
+export interface UnitTypeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  mode: ItemCategoryDialogMode;
-  onModeChange?: (mode: ItemCategoryDialogMode) => void;
-  itemTypeId: number;
-  categoryId?: number;
-  form: ItemCategoryFormState;
-  onFormChange: (form: ItemCategoryFormState) => void;
+  mode: UnitTypeDialogMode;
+  unitTypeId?: number;
+  form: UnitTypeFormState;
+  onFormChange: (form: UnitTypeFormState) => void;
   availableLocales: Locale[];
-  availableParents: ItemCategory[];
   onSaved?: () => void | Promise<void>;
 }
 
-type NewLocaleRow = ItemCategoryLocaleRow & { _rkey: string };
+type NewLocaleRow = UnitTypeLocaleRow & { _rkey: string };
 
-export function ItemCategoryDialog({
+export function UnitTypeDialog({
   open,
   onOpenChange,
   mode,
-  itemTypeId,
-  categoryId,
+  unitTypeId,
   form,
   onFormChange,
   availableLocales,
-  availableParents,
   onSaved,
-}: ItemCategoryDialogProps) {
+}: UnitTypeDialogProps) {
   const { t } = useTranslation();
 
   const [submitting, setSubmitting] = useState(false);
 
-  // General Information section
   const [generalEditing, setGeneralEditing] = useState(false);
   const [localSortOrder, setLocalSortOrder] = useState(0);
   const [submittingGeneral, setSubmittingGeneral] = useState(false);
 
-  // Translations section
   const [translationsEditing, setTranslationsEditing] = useState(false);
   const [newLocaleRows, setNewLocaleRows] = useState<NewLocaleRow[]>([]);
-  const [rowEditData, setRowEditData] = useState<Record<string, ItemCategoryLocaleRow>>({});
+  const [rowEditData, setRowEditData] = useState<Record<string, UnitTypeLocaleRow>>({});
   const [busyRowKeys, setBusyRowKeys] = useState<Set<string>>(new Set());
   const rKeyCounter = useRef(0);
 
@@ -91,7 +80,7 @@ export function ItemCategoryDialog({
     }
   }, [open]);
 
-  function setForm(patch: Partial<ItemCategoryFormState>) {
+  function setForm(patch: Partial<UnitTypeFormState>) {
     onFormChange({ ...form, ...patch });
   }
 
@@ -101,10 +90,10 @@ export function ItemCategoryDialog({
   }
 
   async function saveGeneral() {
-    if (categoryId == null) return;
+    if (unitTypeId == null) return;
     setSubmittingGeneral(true);
     try {
-      await itemCategoriesService.update(itemTypeId, categoryId, {
+      await unitTypesService.update(unitTypeId, {
         sort_order: Number(localSortOrder) || 0,
       });
       toast.success(t("common.save"));
@@ -118,14 +107,14 @@ export function ItemCategoryDialog({
     }
   }
 
-  function rowKey(row: ItemCategoryLocaleRow): string {
+  function rowKey(row: UnitTypeLocaleRow): string {
     return row.id != null ? `e_${row.id}` : (row as NewLocaleRow)._rkey ?? "";
   }
 
   function isRowEditing(key: string) { return key in rowEditData; }
   function isRowBusy(key: string) { return busyRowKeys.has(key); }
 
-  function startEditRow(key: string, row: ItemCategoryLocaleRow) {
+  function startEditRow(key: string, row: UnitTypeLocaleRow) {
     setRowEditData((prev) => ({ ...prev, [key]: { ...row } }));
   }
 
@@ -134,7 +123,7 @@ export function ItemCategoryDialog({
     if (isNew) setNewLocaleRows((prev) => prev.filter((r) => r._rkey !== key));
   }
 
-  function patchRowEdit(key: string, patch: Partial<ItemCategoryLocaleRow>) {
+  function patchRowEdit(key: string, patch: Partial<UnitTypeLocaleRow>) {
     setRowEditData((prev) => prev[key] ? { ...prev, [key]: { ...prev[key], ...patch } } : prev);
   }
 
@@ -146,16 +135,16 @@ export function ItemCategoryDialog({
     });
   }
 
-  async function saveRow(key: string, row: ItemCategoryLocaleRow, isNew: boolean) {
-    if (categoryId == null) return;
+  async function saveRow(key: string, row: UnitTypeLocaleRow, isNew: boolean) {
+    if (unitTypeId == null) return;
     const data = rowEditData[key];
     if (!data) return;
-    if (!data.locale_id) { toast.error(t("itemCategory.errLocaleLang", { n: 1 })); return; }
-    if (!data.name.trim()) { toast.error(t("itemCategory.errLocaleName", { n: 1 })); return; }
+    if (!data.locale_id) { toast.error(t("unitType.errLocaleLang", { n: 1 })); return; }
+    if (!data.name.trim()) { toast.error(t("unitType.errLocaleName", { n: 1 })); return; }
     setBusy(key, true);
     try {
       if (isNew) {
-        await itemCategoriesService.addLocale(itemTypeId, categoryId, {
+        await unitTypesService.addLocale(unitTypeId, {
           locale_id: Number(data.locale_id),
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
@@ -163,7 +152,7 @@ export function ItemCategoryDialog({
         });
         setNewLocaleRows((prev) => prev.filter((r) => r._rkey !== key));
       } else {
-        await itemCategoriesService.updateLocale(itemTypeId, categoryId, row.id!, {
+        await unitTypesService.updateLocale(unitTypeId, row.id!, {
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
           sort_order: Number(data.sort_order) || 0,
@@ -179,12 +168,12 @@ export function ItemCategoryDialog({
     }
   }
 
-  async function deleteRow(row: ItemCategoryLocaleRow) {
-    if (categoryId == null || !row.id) return;
+  async function deleteRow(row: UnitTypeLocaleRow) {
+    if (unitTypeId == null || !row.id) return;
     const key = rowKey(row);
     setBusy(key, true);
     try {
-      await itemCategoriesService.removeLocale(itemTypeId, categoryId, row.id);
+      await unitTypesService.removeLocale(unitTypeId, row.id);
       toast.success("Locale removed");
       await onSaved?.();
     } catch (err) {
@@ -227,7 +216,7 @@ export function ItemCategoryDialog({
     });
   }
 
-  function updateLocaleRow(idx: number, patch: Partial<ItemCategoryLocaleRow>) {
+  function updateLocaleRow(idx: number, patch: Partial<UnitTypeLocaleRow>) {
     onFormChange({ ...form, locales: form.locales.map((row, i) => (i === idx ? { ...row, ...patch } : row)) });
   }
 
@@ -238,16 +227,15 @@ export function ItemCategoryDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (mode !== "create") return;
-    if (!form.code.trim()) { toast.error(t("itemCategory.errCode")); return; }
+    if (!form.code.trim()) { toast.error(t("unitType.errCode")); return; }
     for (const [i, row] of form.locales.entries()) {
-      if (!row.locale_id) { toast.error(t("itemCategory.errLocaleLang", { n: i + 1 })); return; }
-      if (!row.name.trim()) { toast.error(t("itemCategory.errLocaleName", { n: i + 1 })); return; }
+      if (!row.locale_id) { toast.error(t("unitType.errLocaleLang", { n: i + 1 })); return; }
+      if (!row.name.trim()) { toast.error(t("unitType.errLocaleName", { n: i + 1 })); return; }
     }
     setSubmitting(true);
     try {
       const code = form.code.trim().toUpperCase();
-      await itemCategoriesService.create(itemTypeId, {
-        parent_id: form.parent_id ?? null,
+      await unitTypesService.create({
         code,
         sort_order: Number(form.sort_order) || 0,
         locales: form.locales.map((row) => ({
@@ -257,7 +245,7 @@ export function ItemCategoryDialog({
           sort_order: Number(row.sort_order) || 0,
         })),
       });
-      toast.success(`${t("itemCategory.createdToast")} ${code}`);
+      toast.success(`${t("unitType.createdToast")} ${code}`);
       onOpenChange(false);
       await onSaved?.();
     } catch (err) {
@@ -267,12 +255,10 @@ export function ItemCategoryDialog({
     }
   }
 
-  const allLocaleRows: Array<ItemCategoryLocaleRow & { _rkey: string }> = [
+  const allLocaleRows: Array<UnitTypeLocaleRow & { _rkey: string }> = [
     ...form.locales.map((l) => ({ ...l, _rkey: `e_${l.id}` })),
     ...newLocaleRows,
   ];
-
-  const parentCategory = availableParents.find((p) => p.id === form.parent_id);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -283,16 +269,16 @@ export function ItemCategoryDialog({
           <DialogHeader className="shrink-0 px-6 py-5 border-b bg-muted/40">
             <div className="flex items-center gap-3">
               <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Layers className="h-4 w-4" />
+                <Ruler className="h-4 w-4" />
               </div>
               <div>
                 <DialogTitle className="text-base font-semibold leading-tight">
-                  {mode === "create" && t("itemCategory.titleCreate")}
-                  {mode !== "create" && (generalEditing || translationsEditing ? t("itemCategory.titleEdit") : t("itemCategory.titleView"))}
+                  {mode === "create" && t("unitType.titleCreate")}
+                  {mode !== "create" && (generalEditing || translationsEditing ? t("unitType.titleEdit") : t("unitType.titleView"))}
                 </DialogTitle>
                 <DialogDescription className="text-xs mt-0.5">
-                  {mode === "create" && t("itemCategory.dialogDesc")}
-                  {mode !== "create" && (generalEditing || translationsEditing ? t("itemCategory.dialogDescEdit") : t("itemCategory.dialogDescView"))}
+                  {mode === "create" && t("unitType.descCreate")}
+                  {mode !== "create" && (generalEditing || translationsEditing ? t("unitType.descEdit") : t("unitType.descView"))}
                 </DialogDescription>
               </div>
             </div>
@@ -310,17 +296,27 @@ export function ItemCategoryDialog({
                     General Information
                   </h3>
                 </div>
+
                 {mode !== "create" && !generalEditing && (
-                  <Button type="button" size="sm" variant="outline" onClick={startEditGeneral} className="h-7 text-xs px-2.5 gap-1.5">
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={startEditGeneral}
+                    className="h-7 text-xs px-2.5 gap-1.5"
+                  >
                     <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
                   </Button>
                 )}
                 {generalEditing && (
                   <div className="flex items-center gap-1.5">
-                    <Button type="button" size="sm" variant="outline" onClick={() => setGeneralEditing(false)} disabled={submittingGeneral} className="h-7 text-xs px-2.5 gap-1.5">
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => setGeneralEditing(false)}
+                      disabled={submittingGeneral}
+                      className="h-7 text-xs px-2.5 gap-1.5"
+                    >
                       <X className="h-3.5 w-3.5" /> {t("common.cancel")}
                     </Button>
-                    <Button type="button" size="sm" onClick={saveGeneral} disabled={submittingGeneral} className="h-7 text-xs px-2.5 gap-1.5">
+                    <Button type="button" size="sm" onClick={saveGeneral}
+                      disabled={submittingGeneral} className="h-7 text-xs px-2.5 gap-1.5"
+                    >
                       <Check className="h-3.5 w-3.5" />
                       {submittingGeneral ? t("common.saving") : t("common.save")}
                     </Button>
@@ -329,49 +325,23 @@ export function ItemCategoryDialog({
               </div>
 
               <div className="rounded-xl border bg-card p-4 space-y-4">
-                {/* Parent */}
-                <div className="space-y-2">
-                  <Label htmlFor="cat-parent" className="text-xs font-medium">{t("itemCategory.parent")}</Label>
-                  {mode === "create" ? (
-                    <Select
-                      value={form.parent_id != null ? String(form.parent_id) : NO_PARENT}
-                      onValueChange={(v) => setForm({ parent_id: v === NO_PARENT ? null : Number(v) })}
-                    >
-                      <SelectTrigger id="cat-parent">
-                        <SelectValue placeholder={t("itemCategory.noParent")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_PARENT}>{t("itemCategory.noParent")}</SelectItem>
-                        {availableParents.map((p) => (
-                          <SelectItem key={p.id} value={String(p.id)}>{p.code}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="ut-code" className="text-xs font-medium">{t("common.code")} *</Label>
                     <Input
-                      value={parentCategory ? parentCategory.code : t("itemCategory.noParent")}
-                      disabled
-                    />
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="space-y-2 sm:col-span-2">
-                    <Label htmlFor="cat-code" className="text-xs font-medium">{t("common.code")} *</Label>
-                    <Input
-                      id="cat-code"
+                      id="ut-code"
                       value={form.code}
                       onChange={(e) => setForm({ code: e.target.value })}
-                      placeholder="APPETIZER"
+                      placeholder="WEIGHT"
                       required
                       disabled={mode !== "create"}
                       className="font-mono"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="cat-sort" className="text-xs font-medium">{t("field.sort")} *</Label>
+                    <Label htmlFor="ut-sort" className="text-xs font-medium">{t("field.sort")} *</Label>
                     <Input
-                      id="cat-sort"
+                      id="ut-sort"
                       type="number"
                       value={generalEditing ? localSortOrder : form.sort_order}
                       onChange={(e) => {
@@ -395,14 +365,21 @@ export function ItemCategoryDialog({
                     {t("locale.translations")}
                   </h3>
                 </div>
+
                 {mode !== "create" && !translationsEditing && (
-                  <Button type="button" size="sm" variant="outline" onClick={() => setTranslationsEditing(true)} className="h-7 text-xs px-2.5 gap-1.5">
+                  <Button type="button" size="sm" variant="outline"
+                    onClick={() => setTranslationsEditing(true)}
+                    className="h-7 text-xs px-2.5 gap-1.5"
+                  >
                     <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
                   </Button>
                 )}
                 {translationsEditing && (
                   <div className="flex items-center gap-1.5">
-                    <Button type="button" size="sm" variant="outline" onClick={() => setTranslationsEditing(false)} className="h-7 text-xs px-2.5 gap-1.5">
+                    <Button type="button" size="sm" variant="outline"
+                      onClick={() => setTranslationsEditing(false)}
+                      className="h-7 text-xs px-2.5 gap-1.5"
+                    >
                       <X className="h-3.5 w-3.5" /> {t("common.cancel")}
                     </Button>
                     <Button type="button" size="sm" variant="outline" onClick={addNewLocaleRow}
@@ -424,13 +401,12 @@ export function ItemCategoryDialog({
               </div>
 
               <div className="rounded-xl border bg-card overflow-hidden">
-
                 {/* VIEW mode */}
                 {!translationsEditing && mode !== "create" && (
                   form.locales.length === 0 ? (
                     <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                       <Languages className="h-4 w-4 mr-2 opacity-40" />
-                      {t("itemCategory.noLocalesView")}
+                      {t("unitType.noLocales")}
                     </div>
                   ) : (
                     <div className="divide-y">
@@ -446,7 +422,9 @@ export function ItemCategoryDialog({
                               <div className="space-y-1.5 sm:col-span-2">
                                 <Label className="text-xs text-muted-foreground">{t("field.language")}</Label>
                                 <Select value={row.locale_id ? String(row.locale_id) : ""} disabled>
-                                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t("placeholder.selectLanguage")} /></SelectTrigger>
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder={t("placeholder.selectLanguage")} />
+                                  </SelectTrigger>
                                   <SelectContent>
                                     {availableLocales.map((l) => (
                                       <SelectItem key={l.id} value={String(l.id)}>{l.name} ({l.code})</SelectItem>
@@ -461,11 +439,11 @@ export function ItemCategoryDialog({
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.name")}</Label>
-                              <Input value={row.name} disabled className="h-9 text-sm" onChange={() => {}} />
+                              <Input value={row.name} disabled placeholder={t("unitType.namePlaceholder")} className="h-9 text-sm" onChange={() => {}} />
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.description")}</Label>
-                              <Textarea value={row.description ?? ""} disabled rows={2} className="text-sm resize-none" onChange={() => {}} />
+                              <Textarea value={row.description ?? ""} disabled placeholder={t("unitType.descriptionPlaceholder")} rows={2} className="text-sm resize-none" onChange={() => {}} />
                             </div>
                           </div>
                         );
@@ -479,7 +457,7 @@ export function ItemCategoryDialog({
                   form.locales.length === 0 ? (
                     <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                       <Languages className="h-4 w-4 mr-2 opacity-40" />
-                      {t("itemCategory.noLocalesCreate")}
+                      {t("locale.empty.create")}
                     </div>
                   ) : (
                     <div className="divide-y">
@@ -493,34 +471,56 @@ export function ItemCategoryDialog({
                                 {t("locale.row.label", { n: idx + 1 })}
                                 <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{t("locale.row.new")}</span>
                               </div>
-                              <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removeLocaleRow(idx)}>
+                              <Button type="button" size="icon" variant="ghost"
+                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeLocaleRow(idx)}
+                              >
                                 <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <div className="space-y-1.5 sm:col-span-2">
                                 <Label className="text-xs text-muted-foreground">{t("field.language")} *</Label>
-                                <Select value={row.locale_id ? String(row.locale_id) : ""} onValueChange={(v) => updateLocaleRow(idx, { locale_id: Number(v) })}>
-                                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t("placeholder.selectLanguage")} /></SelectTrigger>
+                                <Select
+                                  value={row.locale_id ? String(row.locale_id) : ""}
+                                  onValueChange={(v) => updateLocaleRow(idx, { locale_id: Number(v) })}
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder={t("placeholder.selectLanguage")} />
+                                  </SelectTrigger>
                                   <SelectContent>
                                     {availableLocales.map((l) => (
-                                      <SelectItem key={l.id} value={String(l.id)} disabled={usedIds.includes(l.id)}>{l.name} ({l.code})</SelectItem>
+                                      <SelectItem key={l.id} value={String(l.id)} disabled={usedIds.includes(l.id)}>
+                                        {l.name} ({l.code})
+                                      </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </div>
                               <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">{t("field.sort")} *</Label>
-                                <Input type="number" value={row.sort_order} onChange={(e) => updateLocaleRow(idx, { sort_order: Number(e.target.value) })} className="h-9 text-sm" />
+                                <Input type="number" value={row.sort_order}
+                                  onChange={(e) => updateLocaleRow(idx, { sort_order: Number(e.target.value) })}
+                                  className="h-9 text-sm"
+                                />
                               </div>
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.name")} *</Label>
-                              <Input value={row.name} onChange={(e) => updateLocaleRow(idx, { name: e.target.value })} placeholder="e.g. Appetizer" className="h-9 text-sm" />
+                              <Input value={row.name}
+                                onChange={(e) => updateLocaleRow(idx, { name: e.target.value })}
+                                placeholder={t("unitType.namePlaceholder")}
+                                className="h-9 text-sm"
+                              />
                             </div>
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.description")}</Label>
-                              <Textarea value={row.description} onChange={(e) => updateLocaleRow(idx, { description: e.target.value })} placeholder="Optional description…" rows={2} className="text-sm resize-none" />
+                              <Textarea value={row.description}
+                                onChange={(e) => updateLocaleRow(idx, { description: e.target.value })}
+                                placeholder={t("unitType.descriptionPlaceholder")}
+                                rows={2}
+                                className="text-sm resize-none"
+                              />
                             </div>
                           </div>
                         );
@@ -534,7 +534,7 @@ export function ItemCategoryDialog({
                   allLocaleRows.length === 0 ? (
                     <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
                       <Languages className="h-4 w-4 mr-2 opacity-40" />
-                      {t("itemCategory.noLocalesView")}
+                      {t("unitType.noLocales")}
                     </div>
                   ) : (
                     <div className="divide-y">
@@ -545,24 +545,41 @@ export function ItemCategoryDialog({
                         const busy = isRowBusy(key);
                         const editData = rowEditData[key] ?? row;
                         const localeMeta = availableLocales.find((l) => l.id === row.locale_id);
-                        const usedIds = allLocaleRows.filter((r) => r._rkey !== key).map((r) => r.locale_id).filter((v): v is number => typeof v === "number");
+                        const usedIds = allLocaleRows
+                          .filter((r) => r._rkey !== key)
+                          .map((r) => r.locale_id)
+                          .filter((v): v is number => typeof v === "number");
 
                         return (
                           <div key={key} className="p-4 space-y-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2 text-sm font-medium">
                                 <Languages className="h-3.5 w-3.5 text-muted-foreground" />
-                                {!editing && localeMeta ? `${localeMeta.name} (${localeMeta.code})` : t("locale.row.label", { n: allLocaleRows.indexOf(row) + 1 })}
-                                {isNew && <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">{t("locale.row.new")}</span>}
+                                {!editing && localeMeta
+                                  ? `${localeMeta.name} (${localeMeta.code})`
+                                  : t("locale.row.label", { n: allLocaleRows.indexOf(row) + 1 })}
+                                {isNew && (
+                                  <span className="text-xs px-1.5 py-0.5 rounded-md bg-primary/10 text-primary font-medium">
+                                    {t("locale.row.new")}
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-1">
                                 {!editing && (
                                   <>
-                                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => startEditRow(key, row)} disabled={busy}>
+                                    <Button type="button" size="icon" variant="ghost"
+                                      className="h-7 w-7"
+                                      onClick={() => startEditRow(key, row)}
+                                      disabled={busy}
+                                    >
                                       <Pencil className="h-3.5 w-3.5" />
                                     </Button>
                                     {!isNew && (
-                                      <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => deleteRow(row)} disabled={busy}>
+                                      <Button type="button" size="icon" variant="ghost"
+                                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                        onClick={() => deleteRow(row)}
+                                        disabled={busy}
+                                      >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </Button>
                                     )}
@@ -570,10 +587,18 @@ export function ItemCategoryDialog({
                                 )}
                                 {editing && (
                                   <>
-                                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => cancelEditRow(key, isNew)} disabled={busy}>
+                                    <Button type="button" size="icon" variant="ghost"
+                                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                      onClick={() => cancelEditRow(key, isNew)}
+                                      disabled={busy}
+                                    >
                                       <X className="h-3.5 w-3.5" />
                                     </Button>
-                                    <Button type="button" size="icon" variant="ghost" className="h-7 w-7 text-primary" onClick={() => saveRow(key, row, isNew)} disabled={busy}>
+                                    <Button type="button" size="icon" variant="ghost"
+                                      className="h-7 w-7 text-primary"
+                                      onClick={() => saveRow(key, row, isNew)}
+                                      disabled={busy}
+                                    >
                                       <Check className="h-3.5 w-3.5" />
                                     </Button>
                                   </>
@@ -584,27 +609,55 @@ export function ItemCategoryDialog({
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                               <div className="space-y-1.5 sm:col-span-2">
                                 <Label className="text-xs text-muted-foreground">{t("field.language")} *</Label>
-                                <Select value={editData.locale_id ? String(editData.locale_id) : ""} onValueChange={(v) => patchRowEdit(key, { locale_id: Number(v) })} disabled={!editing || !isNew}>
-                                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={t("placeholder.selectLanguage")} /></SelectTrigger>
+                                <Select
+                                  value={editData.locale_id ? String(editData.locale_id) : ""}
+                                  onValueChange={(v) => patchRowEdit(key, { locale_id: Number(v) })}
+                                  disabled={!editing || !isNew}
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue placeholder={t("placeholder.selectLanguage")} />
+                                  </SelectTrigger>
                                   <SelectContent>
                                     {availableLocales.map((l) => (
-                                      <SelectItem key={l.id} value={String(l.id)} disabled={usedIds.includes(l.id)}>{l.name} ({l.code})</SelectItem>
+                                      <SelectItem key={l.id} value={String(l.id)} disabled={usedIds.includes(l.id)}>
+                                        {l.name} ({l.code})
+                                      </SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </div>
                               <div className="space-y-1.5">
                                 <Label className="text-xs text-muted-foreground">{t("field.sort")} *</Label>
-                                <Input type="number" value={editData.sort_order} onChange={(e) => patchRowEdit(key, { sort_order: Number(e.target.value) })} disabled={!editing} className="h-9 text-sm" />
+                                <Input type="number"
+                                  value={editData.sort_order}
+                                  onChange={(e) => patchRowEdit(key, { sort_order: Number(e.target.value) })}
+                                  disabled={!editing}
+                                  className="h-9 text-sm"
+                                />
                               </div>
                             </div>
+
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.name")} *</Label>
-                              <Input value={editData.name} onChange={(e) => patchRowEdit(key, { name: e.target.value })} placeholder="e.g. Appetizer" disabled={!editing} className="h-9 text-sm" />
+                              <Input
+                                value={editData.name}
+                                onChange={(e) => patchRowEdit(key, { name: e.target.value })}
+                                placeholder={t("unitType.namePlaceholder")}
+                                disabled={!editing}
+                                className="h-9 text-sm"
+                              />
                             </div>
+
                             <div className="space-y-1.5">
                               <Label className="text-xs text-muted-foreground">{t("common.description")}</Label>
-                              <Textarea value={editData.description ?? ""} onChange={(e) => patchRowEdit(key, { description: e.target.value })} placeholder="Optional description…" disabled={!editing} rows={2} className="text-sm resize-none" />
+                              <Textarea
+                                value={editData.description ?? ""}
+                                onChange={(e) => patchRowEdit(key, { description: e.target.value })}
+                                placeholder={t("unitType.descriptionPlaceholder")}
+                                disabled={!editing}
+                                rows={2}
+                                className="text-sm resize-none"
+                              />
                             </div>
                           </div>
                         );
@@ -620,12 +673,14 @@ export function ItemCategoryDialog({
           {mode === "create" && (
             <DialogFooter className="shrink-0 px-6 py-4 border-t bg-muted/40">
               <div className="flex items-center gap-2 w-full justify-end">
-                <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)} disabled={submitting} className="gap-1.5">
+                <Button type="button" variant="outline" size="sm"
+                  onClick={() => onOpenChange(false)} disabled={submitting} className="gap-1.5"
+                >
                   <X className="h-3.5 w-3.5" /> {t("common.cancel")}
                 </Button>
                 <Button type="submit" size="sm" disabled={submitting} className="gap-1.5">
                   <Check className="h-3.5 w-3.5" />
-                  {submitting ? t("common.saving") : t("itemCategory.create")}
+                  {submitting ? t("common.saving") : t("common.create")}
                 </Button>
               </div>
             </DialogFooter>

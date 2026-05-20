@@ -52,7 +52,6 @@ export default function MenuCategoriesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mode, setMode] = useState<MenuCategoryDialogMode>("create");
   const [activeId, setActiveId] = useState<number | undefined>(undefined);
-  const [activeMenuId, setActiveMenuId] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<MenuCategoryFormState>(emptyMenuCategoryForm);
 
   const [deleteTarget, setDeleteTarget] = useState<MenuCategory | null>(null);
@@ -101,15 +100,13 @@ export default function MenuCategoriesPage() {
   function openCreate() {
     setMode("create");
     setActiveId(undefined);
-    setActiveMenuId(undefined);
     setForm(emptyMenuCategoryForm);
     setDialogOpen(true);
   }
 
-  function openDetail(c: MenuCategory, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openDetail(c: MenuCategory) {
+    setMode("view");
     setActiveId(c.id);
-    setActiveMenuId(c.menu_id);
     setForm({
       code: c.code,
       sort_order: c.sort_order,
@@ -196,8 +193,7 @@ export default function MenuCategoriesPage() {
               key={c.id}
               category={c}
               defaultName={categoryNames[c.id]}
-              onView={(cat) => openDetail(cat, "view")}
-              onEdit={(cat) => openDetail(cat, "edit")}
+              onView={(cat) => openDetail(cat)}
               onDelete={(cat) => setDeleteTarget(cat)}
             />
           ))}
@@ -208,9 +204,7 @@ export default function MenuCategoriesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         categoryId={activeId}
-        menuId={activeMenuId}
         form={form}
         onFormChange={setForm}
         availableLocales={availableLocales}

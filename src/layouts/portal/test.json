@@ -1,0 +1,68 @@
+services:
+
+  lofi-book-backend:
+    image: root00023/lofi-book-backend:1.0.0
+
+    container_name: lofi-book-backend-container
+
+    restart: unless-stopped
+
+    depends_on:
+      lofi-book-db:
+        condition: service_healthy
+
+    ports:
+      - "8080:8080"
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://lofi-book-db:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ACCESS_EXPIRATION_MINUTES: ${JWT_ACCESS_EXPIRATION_MINUTES}
+      JWT_REFRESH_EXPIRATION_DAYS: ${JWT_REFRESH_EXPIRATION_DAYS}
+
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT}
+      MAIL_USER_NAME: ${MAIL_USER_NAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_SENDER_NAME: ${MAIL_SENDER_NAME}
+      MAIL_DEBUG: ${MAIL_DEBUG}
+
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "false"
+
+    networks:
+      - production-network
+
+  lofi-book-db:
+    image: postgres:16
+
+    container_name: lofi-book-postgres-container
+
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    volumes:
+      - lofi_book_postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - production-network
+
+volumes:
+  lofi_book_postgres_data:
+
+networks:
+  production-network:
+    external: true

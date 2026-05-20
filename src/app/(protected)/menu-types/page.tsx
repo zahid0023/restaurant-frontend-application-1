@@ -104,8 +104,8 @@ export default function MenuTypesPage() {
     setDialogOpen(true);
   }
 
-  function openDetail(m: Menu, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openDetail(m: Menu) {
+    setMode("view");
     setActiveId(m.id);
     setForm({
       code: m.code,
@@ -194,8 +194,7 @@ export default function MenuTypesPage() {
               menuType={m}
               defaultName={menuTypeNames[m.id]}
               href={`/menu-types/${m.id}`}
-              onView={(mt) => openDetail(mt, "view")}
-              onEdit={(mt) => openDetail(mt, "edit")}
+              onView={(mt) => openDetail(mt)}
               onDelete={(mt) => setDeleteTarget(mt)}
             />
           ))}
@@ -206,7 +205,6 @@ export default function MenuTypesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         menuTypeId={activeId}
         form={form}
         onFormChange={setForm}

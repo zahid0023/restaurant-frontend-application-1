@@ -1,8 +1,7 @@
-
 "use client";
 
 import { use, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Plus, Search, X, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Search, X } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,14 +30,10 @@ import {
   emptyItemCategoryForm,
 } from "@/components/item-categories/item-category-dialog";
 import type { ItemCategoryDialogMode, ItemCategoryFormState } from "@/components/item-categories/types";
-import { ItemTypeDialog, emptyItemTypeForm } from "@/components/item-types/item-type-dialog";
-import type { ItemTypeDialogMode, ItemTypeFormState } from "@/components/item-types/types";
-import { itemTypesService } from "@/services/item-types";
-import type { ItemType, ItemTypeLocale } from "@/services/item-types";
+import { itemTypesService, type ItemType } from "@/services/item-types";
 import { itemCategoriesService } from "@/services/item-categories";
-import type { ItemCategory, ItemCategoryLocale } from "@/services/item-categories";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import type { ItemCategory } from "@/services/item-categories";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -47,7 +42,6 @@ type SearchField = "all" | "code" | "name";
 export default function ItemTypeDetailPage({
   params,
 }: {
-
   params: Promise<{ id: string }>;
 }) {
   const { id: idStr } = use(params);
@@ -64,20 +58,13 @@ export default function ItemTypeDetailPage({
 
   // Item type state
   const [itemType, setItemType] = useState<ItemType | null>(null);
-  const [itemTypeLocales, setItemTypeLocales] = useState<ItemTypeLocale[]>([]);
 
-  // Categories state — holds ALL categories (flat); only roots are displayed on this page
+  // Categories state
   const [categories, setCategories] = useState<ItemCategory[]>([]);
-  const [categoryLocaleRows, setCategoryLocaleRows] = useState<Record<number, ItemCategoryLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchField, setSearchField] = useState<SearchField>("all");
-
-  // Item type edit dialog
-  const [typeDialogOpen, setTypeDialogOpen] = useState(false);
-  const [typeDialogMode, setTypeDialogMode] = useState<ItemTypeDialogMode>("edit");
-  const [typeForm, setTypeForm] = useState<ItemTypeFormState>(emptyItemTypeForm);
 
   // Category dialog
   const [catDialogOpen, setCatDialogOpen] = useState(false);
@@ -92,8 +79,6 @@ export default function ItemTypeDetailPage({
     try {
       const res = await itemTypesService.get(itemTypeId);
       setItemType(res.item_type);
-      const locRes = await itemTypesService.listLocales(itemTypeId, { size: 50 });
-      setItemTypeLocales(locRes.data);
     } catch (e) {
       toast.error((e as Error).message);
     }
@@ -104,22 +89,6 @@ export default function ItemTypeDetailPage({
     try {
       const res = await itemCategoriesService.listRoot(itemTypeId, { size: 50, sort_by: "sortOrder" });
       setCategories(res.data);
-      // Only fetch locales for root categories — subcategory locales are loaded lazily in the overview dialog
-      const roots = res.data.filter((c) => c.parent_id == null);
-      const entries = await Promise.all(
-        roots.map(async (cat) => {
-          try {
-            const loc = await itemCategoriesService.listLocales(itemTypeId, cat.id, {
-              size: 50,
-              sort_by: "sortOrder",
-            });
-            return [cat.id, loc.data] as const;
-          } catch {
-            return [cat.id, [] as ItemCategoryLocale[]] as const;
-          }
-        }),
-      );
-      setCategoryLocaleRows(Object.fromEntries(entries));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -137,28 +106,25 @@ export default function ItemTypeDetailPage({
 
   const categoryNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(categoryLocaleRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const cat of categories) {
+      out[cat.id] = cat.locales[0]?.name ?? "";
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryLocaleRows, locale]);
+  }, [categories, locale]);
 
-  // Map category id → code for parent display
   const categoryCodeMap = useMemo(() => {
     const out: Record<number, string> = {};
     for (const cat of categories) out[cat.id] = cat.code;
     return out;
   }, [categories]);
 
-  // Only top-level categories as available parents (single-level hierarchy)
   const availableParents = useMemo(
     () => categories.filter((c) => !c.parent_id),
     [categories],
   );
 
   const filtered = useMemo(() => {
-    // Only display root categories on this page; subcategories are shown in the overview dialog
     const roots = categories.filter((c) => c.parent_id == null);
     const q = search.trim().toLowerCase();
     if (!q) return roots;
@@ -173,30 +139,6 @@ export default function ItemTypeDetailPage({
     });
   }, [categories, categoryNames, search, searchField]);
 
-  // Item type edit
-  async function openTypeEdit() {
-    if (!itemType) return;
-    setTypeDialogMode("edit");
-    setTypeForm({ code: itemType.code, is_consumable: itemType.is_consumable, sort_order: itemType.sort_order, locales: [] });
-    setTypeDialogOpen(true);
-    try {
-      const locRes = await itemTypesService.listLocales(itemTypeId, { size: 50 });
-      setTypeForm((prev) => ({
-        ...prev,
-        locales: locRes.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
-  }
-
-  // Category CRUD
   function openCreateCat(parentId?: number) {
     setCatMode("create");
     setActiveCatId(undefined);
@@ -204,26 +146,22 @@ export default function ItemTypeDetailPage({
     setCatDialogOpen(true);
   }
 
-  async function openCatDetail(cat: ItemCategory, nextMode: "edit" | "view") {
+  function openCatDetail(cat: ItemCategory, nextMode: "edit" | "view") {
     setCatMode(nextMode);
     setActiveCatId(cat.id);
-    setCatForm({ parent_id: cat.parent_id ?? null, code: cat.code, sort_order: cat.sort_order, locales: [] });
+    setCatForm({
+      parent_id: cat.parent_id ?? null,
+      code: cat.code,
+      sort_order: cat.sort_order,
+      locales: cat.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    });
     setCatDialogOpen(true);
-    try {
-      const res = await itemCategoriesService.listLocales(itemTypeId, cat.id, { size: 50 });
-      setCatForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
@@ -238,7 +176,7 @@ export default function ItemTypeDetailPage({
     }
   }
 
-  const itemTypeName = itemTypeLocales[0]?.name ?? itemType?.code ?? "";
+  const itemTypeName = itemType?.locales[0]?.name ?? itemType?.code ?? "";
   const itemTypeDisplayName = itemTypeName || (itemType?.code ?? `#${itemTypeId}`);
 
   return (
@@ -266,9 +204,6 @@ export default function ItemTypeDetailPage({
                 <Badge variant="secondary" className="text-xs">#{itemType.sort_order}</Badge>
               </div>
             </div>
-            <Button variant="outline" onClick={openTypeEdit}>
-              <Pencil className="h-4 w-4 mr-1.5" /> {t("itemType.editType")}
-            </Button>
           </div>
         ) : (
           <div className="h-14 animate-pulse bg-muted rounded-lg" />
@@ -315,7 +250,7 @@ export default function ItemTypeDetailPage({
                 )}
               </div>
             </div>
-            <Button onClick={openCreateCat}>
+            <Button onClick={() => openCreateCat()}>
               <Plus className="h-4 w-4 mr-1.5" /> {t("itemCategory.newCategory")}
             </Button>
           </div>
@@ -337,6 +272,7 @@ export default function ItemTypeDetailPage({
                 parentCode={cat.parent_id != null ? categoryCodeMap[cat.parent_id] : undefined}
                 subCount={categories.filter((c) => c.parent_id === cat.id).length}
                 onOverview={(c) => setOverviewTarget(c)}
+                onView={(c) => openCatDetail(c, "view")}
                 onEdit={(c) => openCatDetail(c, "edit")}
                 onDelete={(c) => setDeleteTarget(c)}
               />
@@ -344,19 +280,6 @@ export default function ItemTypeDetailPage({
           </div>
         )}
       </div>
-
-      {/* Item type edit dialog */}
-      <ItemTypeDialog
-        open={typeDialogOpen}
-        onOpenChange={setTypeDialogOpen}
-        mode={typeDialogMode}
-        onModeChange={setTypeDialogMode}
-        typeId={itemTypeId}
-        form={typeForm}
-        onFormChange={setTypeForm}
-        availableLocales={availableLocales}
-        onSaved={refreshItemType}
-      />
 
       {/* Category dialog */}
       <ItemCategoryDialog
@@ -373,14 +296,14 @@ export default function ItemTypeDetailPage({
         onSaved={refreshCategories}
       />
 
-      {/* Category overview dialog — self-fetches subcategory data on open */}
+      {/* Category overview dialog */}
       <CategoryOverviewDialog
         open={!!overviewTarget}
         onOpenChange={(o) => !o && setOverviewTarget(null)}
         itemTypeId={itemTypeId}
         category={overviewTarget}
         categoryName={overviewTarget ? categoryNames[overviewTarget.id] : undefined}
-        categoryDescription={overviewTarget ? (categoryLocaleRows[overviewTarget.id]?.[0]?.description ?? undefined) : undefined}
+        categoryDescription={overviewTarget ? (overviewTarget.locales[0]?.description ?? undefined) : undefined}
         availableLocales={availableLocales}
         onEdit={(c) => openCatDetail(c, "edit")}
         onDelete={(c) => setDeleteTarget(c)}

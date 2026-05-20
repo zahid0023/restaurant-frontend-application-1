@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,27 +25,16 @@ import {
 import { ItemTypeCard } from "@/components/item-types/item-type-card";
 import { ItemTypeDialog, emptyItemTypeForm } from "@/components/item-types/item-type-dialog";
 import type { ItemTypeDialogMode, ItemTypeFormState } from "@/components/item-types/types";
-import { itemTypesService } from "@/services/item-types";
-import type { ItemType, ItemTypeLocale } from "@/services/item-types";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import { itemTypesService, type ItemType } from "@/services/item-types";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 
 type SearchField = "all" | "code" | "name";
 
 export default function ItemTypesPage() {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language ?? "en";
-
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    name: t("common.localizedName"),
-  };
+  const { t } = useTranslation();
 
   const [itemTypes, setItemTypes] = useState<ItemType[]>([]);
-  const [localeRows, setLocaleRows] = useState<Record<number, ItemTypeLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -62,17 +52,21 @@ export default function ItemTypesPage() {
     try {
       const res = await itemTypesService.list({ size: 50, sort_by: "sortOrder" });
       setItemTypes(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (it) => {
-          try {
-            const loc = await itemTypesService.listLocales(it.id, { size: 50, sort_by: "sortOrder" });
-            return [it.id, loc.data] as const;
-          } catch {
-            return [it.id, [] as ItemTypeLocale[]] as const;
-          }
-        }),
-      );
-      setLocaleRows(Object.fromEntries(entries));
+      setForm((prev) => {
+        if (!dialogOpen || activeId == null) return prev;
+        const updated = res.data.find((it) => it.id === activeId);
+        if (!updated) return prev;
+        return {
+          ...prev,
+          locales: updated.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        };
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -88,12 +82,11 @@ export default function ItemTypesPage() {
 
   const itemTypeNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(localeRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const it of itemTypes) {
+      out[it.id] = it.locales[0]?.name ?? "";
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [localeRows, locale]);
+  }, [itemTypes]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -116,26 +109,22 @@ export default function ItemTypesPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(it: ItemType, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openDialog(it: ItemType) {
+    setMode("view");
     setActiveId(it.id);
-    setForm({ code: it.code, is_consumable: it.is_consumable, sort_order: it.sort_order, locales: [] });
+    setForm({
+      code: it.code,
+      is_consumable: it.is_consumable,
+      sort_order: it.sort_order,
+      locales: it.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    });
     setDialogOpen(true);
-    try {
-      const res = await itemTypesService.listLocales(it.id, { size: 50 });
-      setForm((prev) => ({
-        ...prev,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
@@ -176,7 +165,7 @@ export default function ItemTypesPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
+                placeholder={`${t("common.search")}…`}
                 className="pl-9 pr-9 w-64 h-10 rounded-l-none"
               />
               {search && (
@@ -210,9 +199,7 @@ export default function ItemTypesPage() {
               key={it.id}
               itemType={it}
               defaultName={itemTypeNames[it.id]}
-              href={`/item-types/${it.id}`}
-              onView={(item) => openDetail(item, "view")}
-              onEdit={(item) => openDetail(item, "edit")}
+              onView={(item) => openDialog(item)}
               onDelete={(item) => setDeleteTarget(item)}
             />
           ))}
@@ -223,7 +210,6 @@ export default function ItemTypesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         typeId={activeId}
         form={form}
         onFormChange={setForm}

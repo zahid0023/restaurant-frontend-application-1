@@ -6,29 +6,25 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useTranslation } from "react-i18next";
-import type { ItemType } from "@/services/item-types";
+import type { UnitTypeSummary } from "@/services/unit-types";
 
-export interface ItemTypeCardProps {
-  itemType: ItemType;
-  defaultName?: string;
-  onView?: (it: ItemType) => void;
-  onDelete?: (it: ItemType) => void;
+export interface UnitTypeCardProps {
+  unitType: UnitTypeSummary;
+  onView?: (ut: UnitTypeSummary) => void;
+  onDelete?: (ut: UnitTypeSummary) => void;
 }
 
-export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTypeCardProps) {
+export function UnitTypeCard({ unitType, onView, onDelete }: UnitTypeCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const it = itemType;
+  const ut = unitType;
 
-  const title = defaultName?.trim() || it.code;
-  const subtitle = defaultName?.trim() ? `${it.code} · ID #${it.id}` : `ID #${it.id}`;
+  const goToDetail = () => router.push(`/unit-types/${ut.id}`);
 
-  const goToDetail = () => router.push(`/item-types/${it.id}`);
-
-  const handleAction = (e: React.MouseEvent, handler?: (i: ItemType) => void) => {
+  const handleAction = (e: React.MouseEvent, handler?: (u: UnitTypeSummary) => void) => {
     e.stopPropagation();
     e.preventDefault();
-    handler?.(it);
+    handler?.(ut);
   };
 
   return (
@@ -42,11 +38,11 @@ export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTy
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
-            {it.code.slice(0, 4)}
+            {ut.code.slice(0, 4)}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold truncate">{title}</h3>
-            <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+            <h3 className="font-semibold truncate font-mono">{ut.code}</h3>
+            <p className="text-xs text-muted-foreground truncate">ID #{ut.id}</p>
           </div>
         </div>
         <div
@@ -67,20 +63,9 @@ export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTy
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm mt-4">
-        <div>
-          <p className="text-xs text-muted-foreground">{t("itemType.isConsumable")}</p>
-          <p className="font-medium">{it.is_consumable ? t("itemType.consumable") : t("itemType.nonConsumable")}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{t("common.code")}</p>
-          <p className="font-medium font-mono">{it.code}</p>
-        </div>
-      </div>
-
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
-        <Badge variant="secondary">#{it.sort_order}</Badge>
-        <span className="text-xs text-muted-foreground">{it.locales.length} locale{it.locales.length !== 1 ? "s" : ""}</span>
+        <Badge variant="secondary">#{ut.sort_order}</Badge>
+        <span className="text-xs text-muted-foreground">{t("common.code")}: {ut.code}</span>
       </div>
     </Card>
   );

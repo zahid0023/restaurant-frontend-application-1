@@ -1,12 +1,6 @@
 import { api } from "./api";
 import type { MutationResponse, PageResponse, ListParams } from "./common";
 
-export interface UnitType {
-  id: number;
-  code: string;
-  sort_order: number;
-}
-
 export interface UnitTypeLocale {
   id: number;
   locale_id: number;
@@ -15,8 +9,29 @@ export interface UnitTypeLocale {
   sort_order: number;
 }
 
+// Full type returned by GET /unit-types/{id}
+export interface UnitType {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales: UnitTypeLocale[];
+}
+
+// Summary type returned by GET /unit-types (list) — no locales
+export interface UnitTypeSummary {
+  id: number;
+  code: string;
+  sort_order: number;
+}
+
 export interface CreateUnitTypeLocaleRequest {
   locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface UpdateUnitTypeLocaleRequest {
   name: string;
   description?: string;
   sort_order: number;
@@ -29,15 +44,14 @@ export interface CreateUnitTypeRequest {
 }
 
 export interface UpdateUnitTypeRequest {
-  code: string;
   sort_order: number;
 }
 
 export const unitTypesService = {
-  async list(params: ListParams = {}): Promise<PageResponse<UnitType>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
+  async list(params: ListParams = {}): Promise<PageResponse<UnitTypeSummary>> {
+    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<UnitType>>(`/unit-types?${query}`);
+    return api.get<PageResponse<UnitTypeSummary>>(`/unit-types?${query}`);
   },
 
   async get(id: number): Promise<{ unit_type: UnitType }> {
@@ -56,21 +70,15 @@ export const unitTypesService = {
     return api.delete<MutationResponse>(`/unit-types/${id}`);
   },
 
-  async listLocales(typeId: number, params: ListParams = {}): Promise<PageResponse<UnitTypeLocale>> {
-    const { page = 0, size = 10, sort_by = "id", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<UnitTypeLocale>>(`/unit-types/${typeId}/locales?${query}`);
+  async addLocale(unitTypeId: number, body: CreateUnitTypeLocaleRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/unit-types/${unitTypeId}/locales`, body);
   },
 
-  async addLocale(typeId: number, body: CreateUnitTypeLocaleRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(`/unit-types/${typeId}/locales`, body);
+  async updateLocale(unitTypeId: number, localeId: number, body: UpdateUnitTypeLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/unit-types/${unitTypeId}/locales/${localeId}`, body);
   },
 
-  async updateLocale(typeId: number, entryId: number, body: CreateUnitTypeLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/unit-types/${typeId}/locales/${entryId}`, body);
-  },
-
-  async removeLocale(typeId: number, entryId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/unit-types/${typeId}/locales/${entryId}`);
+  async removeLocale(unitTypeId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/unit-types/${unitTypeId}/locales/${localeId}`);
   },
 };

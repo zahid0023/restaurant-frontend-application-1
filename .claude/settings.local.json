@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"C:/Users/User/Downloads/resort-platform-application-1/apps/resort-admin-platform-application-1/src/app/\\(protected\\)/\")",
+      "Bash(ls \"C:/Users/User/Downloads/resort-platform-application-1/apps/resort-admin-platform-application-1/src/app/\\(protected\\)/\\(portal\\)/\")",
+      "Bash(ls \"C:/Users/User/Downloads/resort-platform-application-1/apps/resort-admin-platform-application-1/src/app/\\(protected\\)/\\(portal\\)/countries/\" && ls \"C:/Users/User/Downloads/resort-platform-application-1/apps/resort-admin-platform-application-1/src/app/\\(protected\\)/\\(portal\\)/cities/\")",
+      "Bash(ls \"C:/Users/User/Downloads/restaurant-frontend-application-1/src/app/\\(protected\\)/countries/\")"
+    ]
+  }
+}

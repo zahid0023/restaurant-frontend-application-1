@@ -24,6 +24,12 @@ export interface CreateMenuCategoryLocaleRequest {
   sort_order: number;
 }
 
+export interface UpdateMenuCategoryLocaleRequest {
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
 export interface CreateMenuCategoryRequest {
   code: string;
   sort_order: number;
@@ -31,7 +37,6 @@ export interface CreateMenuCategoryRequest {
 }
 
 export interface UpdateMenuCategoryRequest {
-  code: string;
   sort_order: number;
 }
 
@@ -58,31 +63,15 @@ export const menuCategoriesService = {
     return api.delete<MutationResponse>(`/menu-categories/${id}`);
   },
 
-  async listLocales(menuId: number, categoryId: number, params: ListParams = {}): Promise<PageResponse<MenuCategoryLocale>> {
-    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<MenuCategoryLocale>>(
-      `/menu-categories/${categoryId}/locales?${query}`,
-    );
+  async addLocale(categoryId: number, body: CreateMenuCategoryLocaleRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/menu-categories/${categoryId}/locales`, body);
   },
 
-  async addLocale(menuId: number, categoryId: number, body: CreateMenuCategoryLocaleRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(
-      `/menu-categories/${categoryId}/locales`,
-      body,
-    );
+  async updateLocale(categoryId: number, localeId: number, body: UpdateMenuCategoryLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/menu-categories/${categoryId}/locales/${localeId}`, body);
   },
 
-  async updateLocale(menuId: number, categoryId: number, localeId: number, body: CreateMenuCategoryLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(
-      `/menu-categories/${categoryId}/locales/${localeId}`,
-      body,
-    );
-  },
-
-  async removeLocale(menuId: number, categoryId: number, localeId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(
-      `/menu-categories/${categoryId}/locales/${localeId}`,
-    );
+  async removeLocale(categoryId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/menu-categories/${categoryId}/locales/${localeId}`);
   },
 };

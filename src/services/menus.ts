@@ -46,7 +46,12 @@ export interface CreateMenuRequest {
 }
 
 export interface UpdateMenuRequest {
-  code: string;
+  sort_order: number;
+}
+
+export interface UpdateMenuLocaleRequest {
+  name: string;
+  description?: string;
   sort_order: number;
 }
 
@@ -83,7 +88,7 @@ export const menusService = {
     return api.post<MutationResponse>(`/menus/${menuId}/locales`, body);
   },
 
-  async updateLocale(menuId: number, localeId: number, body: CreateMenuLocaleRequest): Promise<MutationResponse> {
+  async updateLocale(menuId: number, localeId: number, body: UpdateMenuLocaleRequest): Promise<MutationResponse> {
     return api.put<MutationResponse>(`/menus/${menuId}/locales/${localeId}`, body);
   },
 

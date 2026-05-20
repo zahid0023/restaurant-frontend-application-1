@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,29 +25,15 @@ import {
 import { CountryCard } from "@/components/countries/country-card";
 import { CountryDialog, emptyCountryForm } from "@/components/countries/country-dialog";
 import type { CountryDialogMode, CountryFormState } from "@/components/countries/types";
-import { countriesService } from "@/services/countries";
-import type { Country, CountryLocale } from "@/services/countries";
-import { localesApi } from "@/services/locales";
-import type { Locale } from "@/services/locales";
+import { countriesService, type Country } from "@/services/countries";
+import { localesApi, type Locale } from "@/services/locales";
 import { toast } from "sonner";
-import { useTranslation } from "react-i18next";
 
 type SearchField = "all" | "code" | "iso3" | "phone" | "name";
 
 export default function CountriesPage() {
-  const { t, i18n } = useTranslation();
-  const locale = i18n.resolvedLanguage ?? i18n.language ?? "en";
-
-  const searchFieldLabels: Record<SearchField, string> = {
-    all: t("common.allFields"),
-    code: t("common.code"),
-    iso3: "ISO3",
-    phone: "Phone",
-    name: t("common.localizedName"),
-  };
-
+  const { t } = useTranslation();
   const [countries, setCountries] = useState<Country[]>([]);
-  const [countryLocaleRows, setCountryLocaleRows] = useState<Record<number, CountryLocale[]>>({});
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -64,21 +51,21 @@ export default function CountriesPage() {
     try {
       const res = await countriesService.list({ size: 50, sort_by: "sortOrder" });
       setCountries(res.data);
-      const entries = await Promise.all(
-        res.data.map(async (c) => {
-          try {
-            const loc = await countriesService.listLocales(c.id, {
-              size: 50,
-              sort_by: "sortOrder",
-              sort_dir: "ASC",
-            });
-            return [c.id, loc.data] as const;
-          } catch {
-            return [c.id, [] as CountryLocale[]] as const;
-          }
-        }),
-      );
-      setCountryLocaleRows(Object.fromEntries(entries));
+      setForm((prev) => {
+        if (!dialogOpen || activeId == null) return prev;
+        const updated = res.data.find((c) => c.id === activeId);
+        if (!updated) return prev;
+        return {
+          ...prev,
+          locales: updated.locales.map((l) => ({
+            id: l.id,
+            locale_id: l.locale_id,
+            name: l.name,
+            description: l.description ?? "",
+            sort_order: l.sort_order,
+          })),
+        };
+      });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -97,12 +84,11 @@ export default function CountriesPage() {
 
   const countryNames = useMemo(() => {
     const out: Record<number, string> = {};
-    for (const [id, rows] of Object.entries(countryLocaleRows)) {
-      out[Number(id)] = rows[0]?.name ?? "";
+    for (const c of countries) {
+      out[c.id] = c.locales[0]?.name ?? "";
     }
     return out;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [countryLocaleRows, locale]);
+  }, [countries]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -130,39 +116,30 @@ export default function CountriesPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(c: Country, nextMode: "edit" | "view") {
-    setMode(nextMode);
+  function openDialog(c: Country) {
+    setMode("view");
     setActiveId(c.id);
     setForm({
       code: c.code,
       iso3_code: c.iso3_code ?? "",
       phone_code: c.phone_code ?? "",
       sort_order: c.sort_order,
-      locales: [],
+      locales: c.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
     });
     setDialogOpen(true);
-    try {
-      const res = await countriesService.listLocales(c.id, { size: 50 });
-      setForm((f) => ({
-        ...f,
-        locales: res.data.map((l) => ({
-          id: l.id,
-          locale_id: l.locale_id,
-          name: l.name,
-          description: l.description ?? "",
-          sort_order: l.sort_order,
-        })),
-      }));
-    } catch {
-      /* non-blocking */
-    }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
       await countriesService.remove(deleteTarget.id);
-      toast.success(`Deleted ${deleteTarget.code}`);
+      toast.success(t("delete.country.title") + ": " + deleteTarget.code);
       setDeleteTarget(null);
       await refresh();
     } catch (err) {
@@ -188,8 +165,8 @@ export default function CountriesPage() {
               <SelectContent>
                 <SelectItem value="all">{t("common.allFields")}</SelectItem>
                 <SelectItem value="code">{t("common.code")}</SelectItem>
-                <SelectItem value="iso3">ISO3</SelectItem>
-                <SelectItem value="phone">Phone</SelectItem>
+                <SelectItem value="iso3">{t("field.iso3")}</SelectItem>
+                <SelectItem value="phone">{t("field.phone")}</SelectItem>
                 <SelectItem value="name">{t("common.localizedName")}</SelectItem>
               </SelectContent>
             </Select>
@@ -198,7 +175,7 @@ export default function CountriesPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder={`${t("common.search")} ${searchFieldLabels[searchField].toLowerCase()}…`}
+                placeholder={`${t("common.search")} ${searchField === "all" ? t("common.allFields") : searchField}…`}
                 className="pl-9 pr-9 w-64 h-10 rounded-l-none"
               />
               {search && (
@@ -232,8 +209,7 @@ export default function CountriesPage() {
               key={c.id}
               country={c}
               defaultName={countryNames[c.id]}
-              onView={(country) => openDetail(country, "view")}
-              onEdit={(country) => openDetail(country, "edit")}
+              onView={(country) => openDialog(country)}
               onDelete={(country) => setDeleteTarget(country)}
             />
           ))}
@@ -244,7 +220,6 @@ export default function CountriesPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
-        onModeChange={setMode}
         countryId={activeId}
         form={form}
         onFormChange={setForm}
@@ -257,7 +232,7 @@ export default function CountriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>{t("delete.country.title")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t("delete.country.desc", { code: deleteTarget?.code ?? "" })}
+              {t("delete.country.desc", { code: deleteTarget?.code })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
