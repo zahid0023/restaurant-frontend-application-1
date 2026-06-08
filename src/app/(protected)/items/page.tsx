@@ -103,8 +103,8 @@ export default function ItemsPage() {
     setActiveId(item.id);
     setForm({
       code: item.code,
-      unit_type_id: item.unit?.unit_type?.id ?? "",
-      unit_id: item.unit?.id ?? "",
+      item_type_id: "",
+      unit_type_id: "",
       sort_order: item.sort_order,
       locales: [],
     });

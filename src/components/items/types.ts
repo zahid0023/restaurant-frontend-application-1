@@ -11,8 +11,8 @@ export interface ItemLocaleRow {
 
 export interface ItemFormState {
   code: string;
+  item_type_id: number | "";
   unit_type_id: number | "";
-  unit_id: number | "";
   sort_order: number;
   locales: ItemLocaleRow[];
 }

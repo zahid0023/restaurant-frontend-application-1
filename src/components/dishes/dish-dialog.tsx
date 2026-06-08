@@ -9,11 +9,19 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { DialogCreateFooter } from "@/components/commons/dialog-create-footer";
+import { DialogEntityHeader } from "@/components/commons/dialog-entity-header";
 import {
   Select,
   SelectContent,
@@ -66,6 +74,7 @@ export function DishDialog({
   const { t } = useTranslation();
 
   const [submitting, setSubmitting] = useState(false);
+  const [confirmClose, setConfirmClose] = useState(false);
 
   // Items & units for ingredient selection (create mode)
   const [availableItems, setAvailableItems] = useState<ItemSummary[]>([]);
@@ -90,8 +99,18 @@ export function DishDialog({
       setNewLocaleRows([]);
       setRowEditData({});
       setBusyRowKeys(new Set());
+      setConfirmClose(false);
     }
   }, [open]);
+
+  const isDirty = mode === "create"
+    ? form.code.trim() !== "" || form.locales.length > 0 || form.variants.length > 0
+    : generalEditing || translationsEditing;
+
+  function requestClose() {
+    if (isDirty) setConfirmClose(true);
+    else onOpenChange(false);
+  }
 
   useEffect(() => {
     itemsService.list({ size: 50 }).then((res) => setAvailableItems(res.data)).catch(() => {});
@@ -192,7 +211,7 @@ export function DishDialog({
     setBusy(key, true);
     try {
       await dishesService.removeLocale(menuId, menuCategoryId, dishId, row.id);
-      toast.success("Locale removed");
+      toast.success(t("locale.removedToast"));
       await onSaved?.();
     } catch (err) {
       toast.error((err as Error).message);
@@ -413,28 +432,21 @@ export function DishDialog({
   const isVegValue = (val: boolean) => val ? "true" : "false";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]">
+    <>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) requestClose(); }}>
+      <DialogContent
+        className="max-w-3xl p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => { e.preventDefault(); requestClose(); }}
+      >
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
 
           {/* HEADER */}
-          <DialogHeader className="shrink-0 px-6 py-5 border-b bg-muted/40">
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <UtensilsCrossed className="h-4 w-4" />
-              </div>
-              <div>
-                <DialogTitle className="text-base font-semibold leading-tight">
-                  {mode === "create" && t("dish.titleCreate")}
-                  {mode !== "create" && (generalEditing || translationsEditing ? t("dish.titleEdit") : t("dish.titleView"))}
-                </DialogTitle>
-                <DialogDescription className="text-xs mt-0.5">
-                  {mode === "create" && t("dish.descCreate")}
-                  {mode !== "create" && (generalEditing || translationsEditing ? t("dish.descEdit") : t("dish.descView"))}
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
+          <DialogEntityHeader
+            icon={<UtensilsCrossed className="h-4 w-4" />}
+            title={mode === "create" ? t("dish.titleCreate") : (generalEditing || translationsEditing ? t("dish.titleEdit") : t("dish.titleView"))}
+            description={mode === "create" ? t("dish.descCreate") : (generalEditing || translationsEditing ? t("dish.descEdit") : t("dish.descView"))}
+          />
 
           {/* CONTENT */}
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
@@ -445,7 +457,7 @@ export function DishDialog({
                 <div className="flex items-center gap-2">
                   <div className="h-1 w-1 rounded-full bg-primary" />
                   <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-                    General Information
+                    {t("common.generalInfo")}
                   </h3>
                 </div>
 
@@ -840,10 +852,9 @@ export function DishDialog({
                 )}
               </div>
             </div>
-          </div>
 
-          {/* Variants (create mode only) */}
-          {mode === "create" && (
+            {/* Variants (create mode only) */}
+            {mode === "create" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1131,26 +1142,29 @@ export function DishDialog({
               )}
             </div>
           )}
+          </div>
 
           {/* FOOTER (create mode only) */}
           {mode === "create" && (
-            <DialogFooter className="shrink-0 px-6 py-4 border-t bg-muted/40">
-              <div className="flex items-center gap-2 w-full justify-end">
-                <Button type="button" variant="outline" size="sm"
-                  onClick={() => onOpenChange(false)} disabled={submitting} className="gap-1.5"
-                >
-                  <X className="h-3.5 w-3.5" /> {t("common.cancel")}
-                </Button>
-                <Button type="submit" size="sm" disabled={submitting} className="gap-1.5">
-                  <Check className="h-3.5 w-3.5" />
-                  {submitting ? t("common.saving") : t("common.create")}
-                </Button>
-              </div>
-            </DialogFooter>
+            <DialogCreateFooter submitting={submitting} onCancel={requestClose} />
           )}
 
         </form>
       </DialogContent>
     </Dialog>
+
+      <AlertDialog open={confirmClose} onOpenChange={setConfirmClose}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("dialog.discardChanges.title")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("dialog.discardChanges.desc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onOpenChange(false)}>{t("dialog.discardChanges.confirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

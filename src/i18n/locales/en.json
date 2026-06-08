@@ -72,7 +72,8 @@
     "admin": "Admin",
     "allFields": "All fields",
     "localizedName": "Localized name",
-    "search": "Search"
+    "search": "Search",
+    "generalInfo": "General Information"
   },
   "toast": {
     "codeRequired": "Country code is required.",
@@ -88,23 +89,24 @@
     "country": "Country"
   },
   "locale": {
-    "translations": "Locale Translations",
-    "add": "Add locale",
+    "translations": "Translations",
+    "add": "Add Translation",
+    "removedToast": "Language entry removed",
     "help": {
-      "create": "Add localized names and descriptions for each language.",
-      "edit": "Existing rows can be edited (language locked). Add new translations below.",
+      "create": "Add a name and description for each language this should appear in.",
+      "edit": "Existing entries can be edited (language locked). Add new languages below.",
       "view": {
-        "country": "Locale translations attached to this country.",
-        "city": "Locale translations attached to this city."
+        "country": "How this country appears in each language.",
+        "city": "How this city appears in each language."
       }
     },
     "empty": {
-      "create": "No locale entries yet.",
-      "country": "No locales for this country.",
-      "city": "No locales for this city."
+      "create": "No language entries yet.",
+      "country": "No language entries for this country.",
+      "city": "No language entries for this city."
     },
     "row": {
-      "label": "Locale {{n}}",
+      "label": "Language {{n}}",
       "new": "New"
     }
   },
@@ -117,6 +119,11 @@
     "cityDescription": "Optional description…"
   },
   "dialog": {
+    "discardChanges": {
+      "title": "Discard changes?",
+      "desc": "You have unsaved changes. They will be lost if you close now.",
+      "confirm": "Discard"
+    },
     "city": {
       "new": "New City",
       "edit": "Edit City",
@@ -427,15 +434,15 @@
     "deletedToast": "Item deleted",
     "deleteTitle": "Delete item?",
     "deleteDesc": "This will soft-delete this item. It will no longer appear in any responses.",
+    "itemType": "Item Type",
+    "selectItemType": "Select an item type",
+    "loadingItemTypes": "Loading item types…",
     "unitType": "Unit Type",
-    "unit": "Unit",
     "selectUnitType": "Select a unit type",
-    "selectUnitTypeFirst": "Select a unit type first",
-    "selectUnit": "Select a unit",
     "loadingUnitTypes": "Loading unit types…",
-    "loadingUnits": "Loading units…",
     "errCode": "Code is required.",
-    "errUnit": "Unit is required.",
+    "errItemType": "Item type is required.",
+    "errUnitType": "Unit type is required.",
     "errLocaleLang": "Locale row {{n}}: select a language.",
     "errLocaleName": "Locale row {{n}}: name is required."
   },

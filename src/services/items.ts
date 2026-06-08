@@ -17,18 +17,9 @@ export interface ItemLocale {
   sort_order: number;
 }
 
-export interface ItemUnitSummary {
-  id: number;
-  code: string;
-  is_base: boolean;
-  sort_order: number;
-  unit_type: { id: number; code: string; sort_order: number };
-}
-
 export interface ItemSummary {
   id: number;
   code: string;
-  unit: ItemUnitSummary;
   sort_order: number;
   locales: ItemLocaleSummary[];
 }
@@ -36,7 +27,6 @@ export interface ItemSummary {
 export interface Item {
   id: number;
   code: string;
-  unit_id: number;
   sort_order: number;
   locales: ItemLocale[];
 }
@@ -55,14 +45,14 @@ export interface UpdateItemLocaleRequest {
 }
 
 export interface CreateItemRequest {
+  item_type_id: number;
+  unit_type_id: number;
   code: string;
-  unit_id: number;
   sort_order: number;
   locales?: CreateItemLocaleRequest[];
 }
 
 export interface UpdateItemRequest {
-  unit_id: number;
   sort_order: number;
 }
 

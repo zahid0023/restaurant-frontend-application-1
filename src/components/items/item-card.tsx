@@ -64,18 +64,6 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
         </div>
       </div>
 
-      {/* General information */}
-      <div className="grid grid-cols-2 gap-3 text-sm mt-4">
-        <div>
-          <p className="text-xs text-muted-foreground">{t("item.unitType")}</p>
-          <p className="font-medium">{item.unit?.unit_type?.code ?? "—"}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{t("item.unit")}</p>
-          <p className="font-medium font-mono">{item.unit?.code ?? "—"}</p>
-        </div>
-      </div>
-
       {/* Footer */}
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
