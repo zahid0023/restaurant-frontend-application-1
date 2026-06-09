@@ -18,17 +18,16 @@ export interface ItemTypeCardProps {
 export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTypeCardProps) {
   const { t } = useTranslation();
   const router = useRouter();
-  const it = itemType;
 
-  const title = defaultName?.trim() || it.code;
-  const subtitle = defaultName?.trim() ? `${it.code} · ID #${it.id}` : `ID #${it.id}`;
+  const title = defaultName?.trim() || itemType.code;
+  const subtitle = defaultName?.trim() ? `${itemType.code} · ID #${itemType.id}` : `ID #${itemType.id}`;
 
-  const goToDetail = () => router.push(`/item-types/${it.id}`);
+  const goToDetail = () => router.push(`/item-types/${itemType.id}`);
 
   const handleAction = (e: React.MouseEvent, handler?: (i: ItemType) => void) => {
     e.stopPropagation();
     e.preventDefault();
-    handler?.(it);
+    handler?.(itemType);
   };
 
   return (
@@ -42,7 +41,7 @@ export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTy
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
-            {it.code.slice(0, 4)}
+            {itemType.code.slice(0, 4)}
           </div>
           <div className="min-w-0">
             <h3 className="font-semibold truncate">{title}</h3>
@@ -67,20 +66,14 @@ export function ItemTypeCard({ itemType, defaultName, onView, onDelete }: ItemTy
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm mt-4">
-        <div>
-          <p className="text-xs text-muted-foreground">{t("itemType.isConsumable")}</p>
-          <p className="font-medium">{it.is_consumable ? t("itemType.consumable") : t("itemType.nonConsumable")}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{t("common.code")}</p>
-          <p className="font-medium font-mono">{it.code}</p>
-        </div>
+      <div className="mt-4 text-sm">
+        <p className="text-xs text-muted-foreground">{t("itemType.isConsumable")}</p>
+        <p className="font-medium">{itemType.is_consumable ? t("itemType.consumable") : t("itemType.nonConsumable")}</p>
       </div>
 
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
-        <Badge variant="secondary">#{it.sort_order}</Badge>
-        <span className="text-xs text-muted-foreground">{it.locales.length} locale{it.locales.length !== 1 ? "s" : ""}</span>
+        <Badge variant="secondary">#{itemType.sort_order}</Badge>
+        <span className="text-xs text-muted-foreground">{itemType.locales.length} locale{itemType.locales.length !== 1 ? "s" : ""}</span>
       </div>
     </Card>
   );

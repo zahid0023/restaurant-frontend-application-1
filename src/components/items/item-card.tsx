@@ -36,7 +36,6 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(item); } }}
       className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-11 w-11 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs text-center leading-tight px-1">
@@ -65,7 +64,6 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
         </div>
       </div>
 
-      {/* Footer */}
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">#{item.sort_order}</Badge>
