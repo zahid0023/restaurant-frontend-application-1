@@ -1,0 +1,25 @@
+System Admin
+    |
+    +-- Manage Restaurants
+
+Restaurant Admin
+    |
+    +-- Manage Menu
+    +-- Manage Dishes
+    +-- Manage Tables
+    +-- View Reports
+
+Kitchen Staff
+    |
+    +-- View Orders
+    +-- Update Order Status
+
+Cashier
+    |
+    +-- View Orders
+    +-- Record Payments
+
+Customer
+    |
+    +-- Browse Menu
+    +-- Place Orders

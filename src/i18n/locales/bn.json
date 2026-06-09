@@ -73,7 +73,12 @@
     "allFields": "সকল ক্ষেত্র",
     "localizedName": "স্থানীয়করণ নাম",
     "search": "অনুসন্ধান",
-    "generalInfo": "সাধারণ তথ্য"
+    "generalInfo": "সাধারণ তথ্য",
+    "confirm": "নিশ্চিত করুন",
+    "prev": "আগের",
+    "next": "পরের",
+    "page": "পৃষ্ঠা",
+    "of": "এর মধ্যে"
   },
   "toast": {
     "codeRequired": "দেশের কোড প্রয়োজন।",
@@ -554,6 +559,11 @@
     "deleteDesc": "এটি এই আইটেমটি সফট-ডিলিট করবে।",
     "searchPlaceholder": "আইটেম অনুসন্ধান করুন…",
     "assignCategories": "বিভাগে নিয়োগ করুন",
+    "unassignFromCategory": "বিভাগ থেকে অপসারণ করুন",
+    "assignConfirmTitle": "বিভাগে নিয়োগ করবেন?",
+    "assignConfirmDesc": "এই আইটেমটি নির্বাচিত বিভাগে নিয়োগ করা হবে।",
+    "unassignConfirmTitle": "বিভাগ থেকে সরাবেন?",
+    "unassignConfirmDesc": "এই আইটেমটি নির্বাচিত বিভাগ থেকে সরানো হবে।",
     "assignCategoriesDesc": "নিয়োগ বা অপসারণ করতে বিভাগ টগল করুন",
     "assign": "নিয়োগ করুন",
     "unassign": "অপসারণ করুন",

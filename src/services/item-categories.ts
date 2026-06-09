@@ -11,7 +11,6 @@ export interface ItemCategoryLocale {
 
 export interface ItemCategory {
   id: number;
-  item_type_id: number;
   parent_id?: number | null;
   code: string;
   sort_order: number;
@@ -52,7 +51,6 @@ export interface ItemCategoryLocaleInDetail {
 
 export interface SubCategoryInDetail {
   id: number;
-  item_type_id: number;
   code: string;
   sort_order: number;
   locales: ItemCategoryLocaleInDetail[];
@@ -66,10 +64,17 @@ export interface ItemLocaleInDetail {
   sort_order: number;
 }
 
+export interface UnitTypeInDetail {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales: { id: number; locale_id: number; name: string; sort_order: number }[];
+}
+
 export interface ItemInDetail {
   id: number;
-  item_type_id: number;
-  unit_id: number;
+  code: string;
+  unit_type: UnitTypeInDetail;
   sort_order: number;
   locales: ItemLocaleInDetail[];
 }
@@ -98,57 +103,49 @@ export interface ShopItemCategory {
 }
 
 export const itemCategoriesService = {
-  async list(itemTypeId: number, params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
+  async list(params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
     const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<ItemCategory>>(`/item-types/${itemTypeId}/item-categories?${query}`);
+    return api.get<PageResponse<ItemCategory>>(`/item-categories?${query}`);
   },
 
-  async listRoot(itemTypeId: number, params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
+  async listRoot(params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
     const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<ItemCategory>>(`/item-types/${itemTypeId}/item-categories/root?${query}`);
+    return api.get<PageResponse<ItemCategory>>(`/item-categories/root?${query}`);
   },
 
-  async listSubcategories(itemTypeId: number, categoryId: number, params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
+  async listSubcategories(categoryId: number, params: ListParams = {}): Promise<PageResponse<ItemCategory>> {
     const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<ItemCategory>>(`/item-types/${itemTypeId}/item-categories/${categoryId}/sub-categories?${query}`);
+    return api.get<PageResponse<ItemCategory>>(`/item-categories/${categoryId}/sub-categories?${query}`);
   },
 
-  async get(itemTypeId: number, id: number): Promise<{ item_category: ItemCategoryDetail }> {
-    return api.get<{ item_category: ItemCategoryDetail }>(`/item-types/${itemTypeId}/item-categories/${id}`);
+  async get(id: number): Promise<{ item_category: ItemCategoryDetail }> {
+    return api.get<{ item_category: ItemCategoryDetail }>(`/item-categories/${id}`);
   },
 
-  async create(itemTypeId: number, body: CreateItemCategoryRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(`/item-types/${itemTypeId}/item-categories`, body);
+  async create(body: CreateItemCategoryRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>("/item-categories", body);
   },
 
-  async update(itemTypeId: number, id: number, body: UpdateItemCategoryRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/item-types/${itemTypeId}/item-categories/${id}`, body);
+  async update(id: number, body: UpdateItemCategoryRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/item-categories/${id}`, body);
   },
 
-  async remove(itemTypeId: number, id: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/item-types/${itemTypeId}/item-categories/${id}`);
+  async remove(id: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/item-categories/${id}`);
   },
 
-  async addLocale(itemTypeId: number, categoryId: number, body: CreateItemCategoryLocaleRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(
-      `/item-types/${itemTypeId}/item-categories/${categoryId}/locales`,
-      body,
-    );
+  async addLocale(categoryId: number, body: CreateItemCategoryLocaleRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/item-categories/${categoryId}/locales`, body);
   },
 
-  async updateLocale(itemTypeId: number, categoryId: number, localeId: number, body: UpdateItemCategoryLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(
-      `/item-types/${itemTypeId}/item-categories/${categoryId}/locales/${localeId}`,
-      body,
-    );
+  async updateLocale(categoryId: number, localeId: number, body: UpdateItemCategoryLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/item-categories/${categoryId}/locales/${localeId}`, body);
   },
 
-  async removeLocale(itemTypeId: number, categoryId: number, localeId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(
-      `/item-types/${itemTypeId}/item-categories/${categoryId}/locales/${localeId}`,
-    );
+  async removeLocale(categoryId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/item-categories/${categoryId}/locales/${localeId}`);
   },
 };

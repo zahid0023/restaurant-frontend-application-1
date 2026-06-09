@@ -11,10 +11,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { itemTypesService } from "@/services/item-types";
-import type { ItemType } from "@/services/item-types";
 import { itemCategoriesService } from "@/services/item-categories";
 import type { ItemCategory } from "@/services/item-categories";
 import { itemItemCategoriesService } from "@/services/item-item-categories";
@@ -24,16 +32,10 @@ interface CategoryWithName {
   name: string;
 }
 
-interface RootGroup {
-  itemType: ItemType;
-  categories: CategoryWithName[];
-}
-
 interface NavEntry {
   categoryId: number;
   categoryName: string;
   categoryCode: string;
-  itemTypeId: number;
 }
 
 export interface AssignCategoriesDialogProps {
@@ -51,7 +53,7 @@ export function AssignCategoriesDialog({
 }: AssignCategoriesDialogProps) {
   const { t } = useTranslation();
 
-  const [rootGroups, setRootGroups] = useState<RootGroup[]>([]);
+  const [rootCategories, setRootCategories] = useState<CategoryWithName[]>([]);
   const [loadingRoots, setLoadingRoots] = useState(false);
 
   const [navStack, setNavStack] = useState<NavEntry[]>([]);
@@ -60,6 +62,8 @@ export function AssignCategoriesDialog({
 
   const [assignedIds, setAssignedIds] = useState<Set<number>>(new Set());
   const [pendingIds, setPendingIds] = useState<Set<number>>(new Set());
+
+  const [confirmTarget, setConfirmTarget] = useState<{ categoryId: number; categoryName: string; action: "assign" | "unassign" } | null>(null);
 
   useEffect(() => {
     if (!open) {
@@ -78,30 +82,18 @@ export function AssignCategoriesDialog({
   useEffect(() => {
     if (navStack.length === 0) return;
     const current = navStack[navStack.length - 1];
-    loadSubcategories(current.itemTypeId, current.categoryId);
+    loadSubcategories(current.categoryId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navStack]);
 
   async function loadRoots() {
     setLoadingRoots(true);
     try {
-      const typesRes = await itemTypesService.list({ size: 50, sort_by: "sortOrder" });
-      const groups: RootGroup[] = [];
-      await Promise.all(
-        typesRes.data.map(async (itemType) => {
-          try {
-            const rootRes = await itemCategoriesService.listRoot(itemType.id);
-            if (rootRes.data.length === 0) return;
-            const withNames: CategoryWithName[] = rootRes.data.map((cat) => ({
-              category: cat,
-              name: cat.locales[0]?.name ?? cat.code,
-            }));
-            groups.push({ itemType, categories: withNames });
-          } catch { /* skip */ }
-        }),
-      );
-      groups.sort((a, b) => a.itemType.sort_order - b.itemType.sort_order);
-      setRootGroups(groups);
+      const res = await itemCategoriesService.listRoot({ size: 50, sort_by: "sortOrder" });
+      setRootCategories(res.data.map((cat) => ({
+        category: cat,
+        name: cat.locales[0]?.name ?? cat.code,
+      })));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -109,16 +101,15 @@ export function AssignCategoriesDialog({
     }
   }
 
-  async function loadSubcategories(itemTypeId: number, categoryId: number) {
+  async function loadSubcategories(categoryId: number) {
     setLoadingSubs(true);
     setSubcategories([]);
     try {
-      const res = await itemCategoriesService.listSubcategories(itemTypeId, categoryId);
-      const withNames: CategoryWithName[] = res.data.map((cat) => ({
+      const res = await itemCategoriesService.listSubcategories(categoryId, { size: 50, sort_by: "sortOrder" });
+      setSubcategories(res.data.map((cat) => ({
         category: cat,
         name: cat.locales[0]?.name ?? cat.code,
-      }));
-      setSubcategories(withNames);
+      })));
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -126,14 +117,13 @@ export function AssignCategoriesDialog({
     }
   }
 
-  function drillInto(cat: CategoryWithName, itemTypeId: number) {
+  function drillInto(cat: CategoryWithName) {
     setNavStack((prev) => [
       ...prev,
       {
         categoryId: cat.category.id,
         categoryName: cat.name,
         categoryCode: cat.category.code,
-        itemTypeId,
       },
     ]);
   }
@@ -144,6 +134,17 @@ export function AssignCategoriesDialog({
 
   function navigateTo(index: number) {
     setNavStack((prev) => prev.slice(0, index + 1));
+  }
+
+  async function confirmAction() {
+    if (!confirmTarget) return;
+    const { categoryId, action } = confirmTarget;
+    setConfirmTarget(null);
+    if (action === "assign") {
+      await handleAssign(categoryId);
+    } else {
+      await handleUnassign(categoryId);
+    }
   }
 
   async function handleAssign(categoryId: number) {
@@ -191,7 +192,6 @@ export function AssignCategoriesDialog({
 
   const isInRoot = navStack.length === 0;
   const currentNav = navStack[navStack.length - 1] ?? null;
-  const totalRoots = rootGroups.reduce((s, g) => s + g.categories.length, 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -258,31 +258,24 @@ export function AssignCategoriesDialog({
                 <Loader2 className="h-5 w-5 animate-spin" />
                 <span className="text-sm">{t("item.loading")}</span>
               </div>
-            ) : totalRoots === 0 ? (
+            ) : rootCategories.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-14 border-2 border-dashed rounded-xl text-muted-foreground">
                 <Tag className="h-7 w-7 opacity-30" />
                 <p className="text-sm">{t("shopItem.noCategoriesAvailable")}</p>
               </div>
             ) : (
-              <div className="space-y-5">
-                {rootGroups.map(({ itemType, categories }) => (
-                  <div key={itemType.id} className="space-y-1.5">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                      {itemType.code}
-                    </p>
-                    {categories.map((item) => (
-                      <CategoryRow
-                        key={item.category.id}
-                        item={item}
-                        assignedIds={assignedIds}
-                        pendingIds={pendingIds}
-                        onAssign={handleAssign}
-                        onUnassign={handleUnassign}
-                        onDrillIn={() => drillInto(item, itemType.id)}
-                        t={t}
-                      />
-                    ))}
-                  </div>
+              <div className="space-y-1.5">
+                {rootCategories.map((item) => (
+                  <CategoryRow
+                    key={item.category.id}
+                    item={item}
+                    assignedIds={assignedIds}
+                    pendingIds={pendingIds}
+                    onAssign={(id, name) => setConfirmTarget({ categoryId: id, categoryName: name, action: "assign" })}
+                    onUnassign={(id, name) => setConfirmTarget({ categoryId: id, categoryName: name, action: "unassign" })}
+                    onDrillIn={() => drillInto(item)}
+                    t={t}
+                  />
                 ))}
               </div>
             )
@@ -305,9 +298,9 @@ export function AssignCategoriesDialog({
                     item={item}
                     assignedIds={assignedIds}
                     pendingIds={pendingIds}
-                    onAssign={handleAssign}
-                    onUnassign={handleUnassign}
-                    onDrillIn={() => drillInto(item, currentNav!.itemTypeId)}
+                    onAssign={(id, name) => setConfirmTarget({ categoryId: id, categoryName: name, action: "assign" })}
+                    onUnassign={(id, name) => setConfirmTarget({ categoryId: id, categoryName: name, action: "unassign" })}
+                    onDrillIn={() => drillInto(item)}
                     t={t}
                   />
                 ))}
@@ -315,6 +308,23 @@ export function AssignCategoriesDialog({
             )
           )}
         </div>
+        <AlertDialog open={!!confirmTarget} onOpenChange={(o) => !o && setConfirmTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {confirmTarget?.action === "assign" ? t("shopItem.assignConfirmTitle") : t("shopItem.unassignConfirmTitle")}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {confirmTarget?.action === "assign" ? t("shopItem.assignConfirmDesc") : t("shopItem.unassignConfirmDesc")}
+                {confirmTarget && <span className="block font-medium mt-1">{confirmTarget.categoryName}</span>}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmAction}>{t("common.confirm")}</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
@@ -324,8 +334,8 @@ interface CategoryRowProps {
   item: CategoryWithName;
   assignedIds: Set<number>;
   pendingIds: Set<number>;
-  onAssign: (id: number) => void;
-  onUnassign: (id: number) => void;
+  onAssign: (id: number, name: string) => void;
+  onUnassign: (id: number, name: string) => void;
   onDrillIn: () => void;
   t: (key: string) => string;
 }
@@ -361,7 +371,7 @@ function CategoryRow({ item, assignedIds, pendingIds, onAssign, onUnassign, onDr
         variant={isAssigned ? "outline" : "default"}
         className="h-7 text-xs px-2.5 shrink-0"
         disabled={isPending}
-        onClick={() => isAssigned ? onUnassign(category.id) : onAssign(category.id)}
+        onClick={() => isAssigned ? onUnassign(category.id, name) : onAssign(category.id, name)}
       >
         {isPending ? (
           <Loader2 className="h-3 w-3 animate-spin" />

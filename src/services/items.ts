@@ -17,11 +17,19 @@ export interface ItemLocale {
   sort_order: number;
 }
 
+export interface UnitTypeSummary {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales: { id: number; locale_id: number; name: string; sort_order: number }[];
+}
+
 export interface ItemSummary {
   id: number;
   code: string;
   sort_order: number;
   locales: ItemLocaleSummary[];
+  unit_type?: UnitTypeSummary;
 }
 
 export interface Item {
@@ -57,9 +65,11 @@ export interface UpdateItemRequest {
 }
 
 export const itemsService = {
-  async list(params: ListParams = {}): Promise<PageResponse<ItemSummary>> {
-    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
+  async list(params: ListParams & { search?: string; search_field?: string } = {}): Promise<PageResponse<ItemSummary>> {
+    const { page = 0, size = 20, sort_by = "sortOrder", sort_dir = "ASC", search, search_field } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    if (search) query.set("search", search);
+    if (search_field && search_field !== "all") query.set("search_field", search_field);
     return api.get<PageResponse<ItemSummary>>(`/items?${query}`);
   },
 

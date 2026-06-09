@@ -9,12 +9,36 @@ export interface ItemTypeLocale {
   sort_order: number;
 }
 
+export interface ItemInTypeLocale {
+  id: number;
+  locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface ItemInTypeUnitType {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales: ItemInTypeLocale[];
+}
+
+export interface ItemInType {
+  id: number;
+  code: string;
+  unit_type: ItemInTypeUnitType;
+  sort_order: number;
+  locales: ItemInTypeLocale[];
+}
+
 export interface ItemType {
   id: number;
   code: string;
   is_consumable: boolean;
   sort_order: number;
   locales: ItemTypeLocale[];
+  items?: ItemInType[];
 }
 
 export interface CreateItemTypeLocaleRequest {

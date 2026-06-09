@@ -24,7 +24,6 @@ export interface ItemCategoryLocaleTranslationsProps {
   mode: ItemCategoryDialogMode;
   form: ItemCategoryFormState;
   onFormChange: (form: ItemCategoryFormState) => void;
-  itemTypeId: number;
   categoryId?: number;
   availableLocales: Locale[];
   onSaved?: () => void | Promise<void>;
@@ -37,7 +36,6 @@ export function ItemCategoryLocaleTranslations({
   mode,
   form,
   onFormChange,
-  itemTypeId,
   categoryId,
   availableLocales,
   onSaved,
@@ -96,7 +94,7 @@ export function ItemCategoryLocaleTranslations({
     setBusy(key, true);
     try {
       if (isNew) {
-        await itemCategoriesService.addLocale(itemTypeId, categoryId, {
+        await itemCategoriesService.addLocale(categoryId, {
           locale_id: Number(data.locale_id),
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
@@ -104,7 +102,7 @@ export function ItemCategoryLocaleTranslations({
         });
         setNewLocaleRows((prev) => prev.filter((r) => r._rkey !== key));
       } else {
-        await itemCategoriesService.updateLocale(itemTypeId, categoryId, row.id!, {
+        await itemCategoriesService.updateLocale(categoryId, row.id!, {
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
           sort_order: Number(data.sort_order) || 0,
@@ -125,7 +123,7 @@ export function ItemCategoryLocaleTranslations({
     const key = rowKey(row);
     setBusy(key, true);
     try {
-      await itemCategoriesService.removeLocale(itemTypeId, categoryId, row.id);
+      await itemCategoriesService.removeLocale(categoryId, row.id);
       toast.success(t("locale.removedToast"));
       await onSaved?.();
     } catch (err) {

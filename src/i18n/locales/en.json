@@ -73,7 +73,12 @@
     "allFields": "All fields",
     "localizedName": "Localized name",
     "search": "Search",
-    "generalInfo": "General Information"
+    "generalInfo": "General Information",
+    "confirm": "Confirm",
+    "prev": "Prev",
+    "next": "Next",
+    "page": "Page",
+    "of": "of"
   },
   "toast": {
     "codeRequired": "Country code is required.",
@@ -671,6 +676,11 @@
     "deleteDesc": "This will soft-delete this item.",
     "searchPlaceholder": "Search items…",
     "assignCategories": "Assign to Categories",
+    "unassignFromCategory": "Unassign from Category",
+    "assignConfirmTitle": "Assign to category?",
+    "assignConfirmDesc": "This item will be assigned to the selected category.",
+    "unassignConfirmTitle": "Unassign from category?",
+    "unassignConfirmDesc": "This item will be removed from the selected category.",
     "assignCategoriesDesc": "Toggle categories to assign or unassign",
     "assign": "Assign",
     "unassign": "Unassign",

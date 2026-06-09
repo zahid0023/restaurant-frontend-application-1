@@ -51,10 +51,20 @@ export default function ItemsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ItemSummary | null>(null);
   const [assignTarget, setAssignTarget] = useState<ItemSummary | null>(null);
 
-  async function refresh() {
+  useEffect(() => {
+    localesApi.list({ size: 50, sort_by: "sortOrder" }).then((r) => setAvailableLocales(r.data)).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function fetchItems() {
     setLoading(true);
     try {
-      const res = await itemsService.list({ size: 50, sort_by: "sortOrder" });
+      const res = await itemsService.list({ page: 0, size: 50, sort_by: "sortOrder" });
       setItems(res.data);
     } catch (e) {
       toast.error((e as Error).message);
@@ -63,33 +73,15 @@ export default function ItemsPage() {
     }
   }
 
-  useEffect(() => {
-    refresh();
-    localesApi.list({ size: 50, sort_by: "sortOrder" }).then((r) => setAvailableLocales(r.data)).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const itemNames = useMemo(() => {
-    const out: Record<number, string> = {};
-    for (const item of items) {
-      out[item.id] = item.locales[0]?.name ?? "";
-    }
-    return out;
-  }, [items]);
-
-  const filtered = useMemo(() => {
+  const filteredItems = useMemo(() => {
+    if (!search.trim()) return items;
     const q = search.trim().toLowerCase();
-    if (!q) return items;
     return items.filter((item) => {
-      const code = item.code.toLowerCase();
-      const name = (itemNames[item.id] ?? "").toLowerCase();
-      switch (searchField) {
-        case "code": return code.includes(q);
-        case "name": return name.includes(q);
-        default: return code.includes(q) || name.includes(q);
-      }
+      if (searchField === "code") return item.code.toLowerCase().includes(q);
+      if (searchField === "name") return item.locales.some((l) => l.name.toLowerCase().includes(q));
+      return item.code.toLowerCase().includes(q) || item.locales.some((l) => l.name.toLowerCase().includes(q));
     });
-  }, [items, itemNames, search, searchField]);
+  }, [items, search, searchField]);
 
   function openCreate() {
     setMode("create");
@@ -131,11 +123,14 @@ export default function ItemsPage() {
       await itemsService.remove(deleteTarget.id);
       toast.success(`${t("item.deletedToast")} ${deleteTarget.code}`);
       setDeleteTarget(null);
-      await refresh();
+      await fetchItems();
     } catch (err) {
       toast.error((err as Error).message);
     }
   }
+
+  const itemNames: Record<number, string> = {};
+  for (const item of items) itemNames[item.id] = item.locales[0]?.name ?? "";
 
   const searchFieldLabels: Record<SearchField, string> = {
     all: t("common.allFields"),
@@ -191,14 +186,18 @@ export default function ItemsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-16 text-muted-foreground">{t("item.loading")}</div>
-      ) : filtered.length === 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-36 rounded-xl bg-muted animate-pulse" />
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground border rounded-xl border-dashed">
           {t("item.empty")}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((item) => (
+          {filteredItems.map((item) => (
             <ItemCard
               key={item.id}
               item={item}
@@ -219,7 +218,7 @@ export default function ItemsPage() {
         form={form}
         onFormChange={setForm}
         availableLocales={availableLocales}
-        onSaved={refresh}
+        onSaved={() => fetchItems()}
       />
 
       <AssignCategoriesDialog

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Pencil, Trash2, Plus, FolderOpen, Tag, GitBranch, X, ArrowLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Pencil, Trash2, Plus, FolderOpen, Tag, GitBranch, X, ArrowLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -17,18 +17,23 @@ import { toast } from "sonner";
 import { itemCategoriesService } from "@/services/item-categories";
 import type { ItemCategory, ItemCategoryDetail } from "@/services/item-categories";
 import { itemItemCategoriesService } from "@/services/item-item-categories";
+import { itemsService } from "@/services/items";
+import type { UnitTypeSummary } from "@/services/items";
 import type { Locale } from "@/services/locales";
 import { ItemCategoryCard } from "@/components/item-categories/item-category-card";
+import { ItemCard } from "@/components/items/item-card";
+import { ItemDialog, emptyItemForm } from "@/components/items/item-dialog";
+import type { ItemFormState } from "@/components/items/types";
 import {
   ItemCategoryDialog,
   emptyItemCategoryForm,
 } from "@/components/item-categories/item-category-dialog";
 import type { ItemCategoryDialogMode, ItemCategoryFormState } from "@/components/item-categories/types";
+import type { ItemInDetail } from "@/services/item-categories";
 
 export interface CategoryOverviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  itemTypeId: number;
   category: ItemCategory | null;
   categoryName?: string;
   categoryDescription?: string;
@@ -43,7 +48,6 @@ type NavEntry = { cat: ItemCategory; name?: string; description?: string };
 export function CategoryOverviewDialog({
   open,
   onOpenChange,
-  itemTypeId,
   category,
   categoryName,
   categoryDescription,
@@ -67,9 +71,33 @@ export function CategoryOverviewDialog({
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<ItemCategory | null>(null);
+  const [deleteItemTarget, setDeleteItemTarget] = useState<ItemInDetail | null>(null);
+  const [unassignItemTarget, setUnassignItemTarget] = useState<ItemInDetail | null>(null);
 
-  // Items section
-  const [itemPendingIds, setItemPendingIds] = useState<Set<number>>(new Set());
+
+  // Item view dialog
+  const [itemDialogOpen, setItemDialogOpen] = useState(false);
+  const [activeItemId, setActiveItemId] = useState<number | undefined>(undefined);
+  const [itemForm, setItemForm] = useState<ItemFormState>(emptyItemForm);
+
+  function openItemView(item: ItemInDetail) {
+    setActiveItemId(item.id);
+    setItemForm({
+      code: item.code,
+      item_type_id: "",
+      unit_type_id: item.unit_type?.id ?? 0,
+      sort_order: item.sort_order,
+      locales: item.locales.map((l) => ({
+        id: l.id,
+        locale_id: l.locale_id,
+        name: l.name,
+        description: l.description ?? "",
+        sort_order: l.sort_order,
+      })),
+    });
+    setItemDialogOpen(true);
+  }
+
 
   // Reset stack when panel opens or root category changes
   useEffect(() => {
@@ -84,7 +112,7 @@ export function CategoryOverviewDialog({
 
   const current = navStack[navStack.length - 1] ?? null;
 
-  // Fetch full category detail (sub_categories + items + locales) in one API call
+  // Fetch category detail (sub_categories + items) when navigating
   useEffect(() => {
     if (!current) return;
     fetchDetail(current.cat.id);
@@ -95,7 +123,7 @@ export function CategoryOverviewDialog({
     setLoading(true);
     setDetail(null);
     try {
-      const res = await itemCategoriesService.get(itemTypeId, catId);
+      const res = await itemCategoriesService.get(catId);
       setDetail(res.item_category);
     } catch {
       /* silent */
@@ -148,7 +176,7 @@ export function CategoryOverviewDialog({
   async function confirmDeleteSub() {
     if (!deleteTarget) return;
     try {
-      await itemCategoriesService.remove(itemTypeId, deleteTarget.id);
+      await itemCategoriesService.remove(deleteTarget.id);
       toast.success(`${t("itemCategory.deletedToast")} ${deleteTarget.code}`);
       setDeleteTarget(null);
       if (current) await fetchDetail(current.cat.id);
@@ -157,21 +185,27 @@ export function CategoryOverviewDialog({
     }
   }
 
-  async function handleUnassignItem(itemId: number) {
-    if (!current) return;
-    setItemPendingIds((prev) => new Set(prev).add(itemId));
+  async function confirmDeleteItem() {
+    if (!deleteItemTarget || !current) return;
     try {
-      await itemItemCategoriesService.unassign(itemId, current.cat.id);
-      toast.success(t("shopItem.unassignedToast"));
+      await itemsService.remove(deleteItemTarget.id);
+      toast.success(`${t("item.deletedToast")} ${deleteItemTarget.code}`);
+      setDeleteItemTarget(null);
       await fetchDetail(current.cat.id);
     } catch (err) {
       toast.error((err as Error).message);
-    } finally {
-      setItemPendingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(itemId);
-        return next;
-      });
+    }
+  }
+
+  async function confirmUnassignItem() {
+    if (!unassignItemTarget || !current) return;
+    try {
+      await itemItemCategoriesService.unassign(unassignItemTarget.id, current.cat.id);
+      toast.success(t("shopItem.unassignedToast"));
+      setUnassignItemTarget(null);
+      await fetchDetail(current.cat.id);
+    } catch (err) {
+      toast.error((err as Error).message);
     }
   }
 
@@ -348,74 +382,81 @@ export function CategoryOverviewDialog({
             </div>
 
             {/* Items section */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center">
-                    <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+            {(() => {
+              const items = detail?.items ?? [];
+              return (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center">
+                      <Tag className="h-3.5 w-3.5 text-muted-foreground" />
+                    </div>
+                    <h3 className="font-semibold text-sm">{t("itemCategory.items")}</h3>
+                    {items.length > 0 && (
+                      <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
+                        {items.length}
+                      </span>
+                    )}
                   </div>
-                  <h3 className="font-semibold text-sm">{t("itemCategory.items")}</h3>
-                  {(detail?.items.length ?? 0) > 0 && (
-                    <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full font-medium">
-                      {detail!.items.length}
-                    </span>
+
+                  {loading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {[1, 2].map((i) => <div key={i} className="h-28 rounded-xl bg-muted animate-pulse" />)}
+                    </div>
+                  ) : items.length === 0 ? (
+                    <div className="flex flex-col items-center gap-2.5 py-8 border-2 border-dashed rounded-xl text-muted-foreground">
+                      <FolderOpen className="h-8 w-8 opacity-25" />
+                      <p className="text-sm">{t("itemCategory.noItems")}</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {items.map((item) => (
+                        <ItemCard
+                          key={item.id}
+                          item={{
+                            id: item.id,
+                            code: item.code,
+                            sort_order: item.sort_order,
+                            unit_type: item.unit_type as unknown as UnitTypeSummary,
+                            locales: item.locales.map((l) => ({
+                              id: l.id,
+                              locale_code: "",
+                              name: l.name,
+                              description: l.description,
+                              sort_order: l.sort_order,
+                            })),
+                          }}
+                          defaultName={item.locales[0]?.name}
+                          onView={() => openItemView(item)}
+                          onDelete={() => setDeleteItemTarget(item)}
+                          onUnassignCategory={() => setUnassignItemTarget(item)}
+                        />
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {loading || !detail ? (
-                <div className="h-16 rounded-xl bg-muted animate-pulse" />
-              ) : detail.items.length === 0 ? (
-                <div className="flex flex-col items-center gap-2.5 py-8 border-2 border-dashed rounded-xl text-muted-foreground">
-                  <FolderOpen className="h-8 w-8 opacity-25" />
-                  <p className="text-sm">{t("itemCategory.noItems")}</p>
-                </div>
-              ) : (
-                <div className="space-y-1.5">
-                  {detail.items.map((item) => {
-                    const isPending = itemPendingIds.has(item.id);
-                    const name = item.locales[0]?.name ?? `#${item.id}`;
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg border bg-primary/5 border-primary/20"
-                      >
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-7 w-7 rounded-md bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground shrink-0">
-                            {name.slice(0, 2).toUpperCase()}
-                          </div>
-                          <p className="text-sm font-medium truncate">{name}</p>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs shrink-0"
-                          disabled={isPending}
-                          onClick={() => handleUnassignItem(item.id)}
-                        >
-                          {isPending ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            t("shopItem.unassign")
-                          )}
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              );
+            })()}
           </div>
         </div>
       </div>
+
+      {/* Item view dialog */}
+      <ItemDialog
+        open={itemDialogOpen}
+        onOpenChange={setItemDialogOpen}
+        mode="view"
+        itemId={activeItemId}
+        form={itemForm}
+        onFormChange={setItemForm}
+        availableLocales={availableLocales}
+        onSaved={() => current && fetchDetail(current.cat.id)}
+      />
 
       {/* CRUD dialog for subcategories */}
       <ItemCategoryDialog
         open={catDialogOpen}
         onOpenChange={setCatDialogOpen}
         mode={catMode}
-        onModeChange={setCatMode}
-        itemTypeId={itemTypeId}
         categoryId={activeCatId}
         form={catForm}
         onFormChange={setCatForm}
@@ -423,6 +464,37 @@ export function CategoryOverviewDialog({
         availableParents={[]}
         onSaved={() => current && fetchDetail(current.cat.id)}
       />
+
+      {/* Unassign item confirmation */}
+      <AlertDialog open={!!unassignItemTarget} onOpenChange={(o) => !o && setUnassignItemTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("shopItem.unassignConfirmTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("shopItem.unassignConfirmDesc")}
+              {unassignItemTarget && <span className="block font-medium mt-1">{unassignItemTarget.locales[0]?.name ?? unassignItemTarget.code}</span>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmUnassignItem}>{t("common.confirm")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Item delete confirmation */}
+      <AlertDialog open={!!deleteItemTarget} onOpenChange={(o) => !o && setDeleteItemTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("item.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("item.deleteDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteItem}>{t("common.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>

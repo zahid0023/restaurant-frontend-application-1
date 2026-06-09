@@ -13,9 +13,10 @@ export interface ItemCardProps {
   onView?: (item: ItemSummary) => void;
   onDelete?: (item: ItemSummary) => void;
   onAssignCategories?: (item: ItemSummary) => void;
+  onUnassignCategory?: (item: ItemSummary) => void;
 }
 
-export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategories }: ItemCardProps) {
+export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategories, onUnassignCategory }: ItemCardProps) {
   const { t } = useTranslation();
 
   const title = defaultName?.trim() || item.code;
@@ -68,6 +69,11 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">#{item.sort_order}</Badge>
+          {item.unit_type && (
+            <Badge variant="outline" className="text-xs font-mono">
+              {item.unit_type.code}
+            </Badge>
+          )}
           {onAssignCategories && (
             <Button
               size="sm"
@@ -77,6 +83,17 @@ export function ItemCard({ item, defaultName, onView, onDelete, onAssignCategori
             >
               <Tag className="h-3 w-3" />
               {t("shopItem.assignCategories")}
+            </Button>
+          )}
+          {onUnassignCategory && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-xs gap-1 px-2 text-muted-foreground hover:text-foreground"
+              onClick={(e) => handleAction(e, onUnassignCategory)}
+            >
+              <Tag className="h-3 w-3" />
+              {t("shopItem.unassignFromCategory")}
             </Button>
           )}
         </div>

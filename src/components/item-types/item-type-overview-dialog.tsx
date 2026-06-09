@@ -79,7 +79,7 @@ export function ItemTypeOverviewDialog({
   async function fetchCategories() {
     setLoading(true);
     try {
-      const res = await itemCategoriesService.list(itemTypeId, { size: 50, sort_by: "sortOrder" });
+      const res = await itemCategoriesService.list({ size: 50, sort_by: "sortOrder" });
       setCategories(res.data);
       const entries = res.data.map((cat) => [cat.id, cat.locales ?? []] as const);
       setCategoryLocaleRows(Object.fromEntries(entries));
@@ -131,7 +131,7 @@ export function ItemTypeOverviewDialog({
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await itemCategoriesService.remove(itemTypeId, deleteTarget.id);
+      await itemCategoriesService.remove(deleteTarget.id);
       toast.success(`${t("itemCategory.deletedToast")} ${deleteTarget.code}`);
       setDeleteTarget(null);
       await fetchCategories();
@@ -255,8 +255,6 @@ export function ItemTypeOverviewDialog({
         open={catDialogOpen}
         onOpenChange={setCatDialogOpen}
         mode={catMode}
-        onModeChange={setCatMode}
-        itemTypeId={itemTypeId}
         categoryId={activeCatId}
         form={catForm}
         onFormChange={setCatForm}
@@ -269,7 +267,6 @@ export function ItemTypeOverviewDialog({
       <CategoryOverviewDialog
         open={!!overviewCat}
         onOpenChange={(o) => !o && setOverviewCat(null)}
-        itemTypeId={itemTypeId}
         category={overviewCat}
         categoryName={overviewCat ? categoryNames[overviewCat.id] : undefined}
         categoryDescription={overviewCat ? (categoryLocaleRows[overviewCat.id]?.[0]?.description ?? undefined) : undefined}

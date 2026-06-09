@@ -23,7 +23,6 @@ export interface ItemCategoryGeneralInfoProps {
   mode: ItemCategoryDialogMode;
   form: ItemCategoryFormState;
   onFormChange: (patch: Partial<ItemCategoryFormState>) => void;
-  itemTypeId: number;
   categoryId?: number;
   availableParents: ItemCategory[];
   onSaved?: () => void | Promise<void>;
@@ -36,7 +35,6 @@ export function ItemCategoryGeneralInfo({
   mode,
   form,
   onFormChange,
-  itemTypeId,
   categoryId,
   availableParents,
   onSaved,
@@ -61,7 +59,7 @@ export function ItemCategoryGeneralInfo({
     if (categoryId == null) return;
     setSubmitting(true);
     try {
-      await itemCategoriesService.update(itemTypeId, categoryId, { sort_order: Number(localSortOrder) || 0 });
+      await itemCategoriesService.update(categoryId, { sort_order: Number(localSortOrder) || 0 });
       toast.success(t("common.save"));
       onEditingChange(false);
       onFormChange({ sort_order: Number(localSortOrder) || 0 });

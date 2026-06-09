@@ -35,7 +35,6 @@ export interface ItemCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: ItemCategoryDialogMode;
-  itemTypeId: number;
   categoryId?: number;
   form: ItemCategoryFormState;
   onFormChange: (form: ItemCategoryFormState) => void;
@@ -48,7 +47,6 @@ export function ItemCategoryDialog({
   open,
   onOpenChange,
   mode,
-  itemTypeId,
   categoryId,
   form,
   onFormChange,
@@ -90,7 +88,7 @@ export function ItemCategoryDialog({
     setSubmitting(true);
     try {
       const code = form.code.trim().toUpperCase();
-      await itemCategoriesService.create(itemTypeId, {
+      await itemCategoriesService.create({
         parent_id: form.parent_id ?? null,
         code,
         sort_order: Number(form.sort_order) || 0,
@@ -130,7 +128,6 @@ export function ItemCategoryDialog({
                 mode={mode}
                 form={form}
                 onFormChange={(patch) => onFormChange({ ...form, ...patch })}
-                itemTypeId={itemTypeId}
                 categoryId={categoryId}
                 availableParents={availableParents}
                 onSaved={onSaved}
@@ -142,7 +139,6 @@ export function ItemCategoryDialog({
                 mode={mode}
                 form={form}
                 onFormChange={onFormChange}
-                itemTypeId={itemTypeId}
                 categoryId={categoryId}
                 availableLocales={availableLocales}
                 onSaved={onSaved}
