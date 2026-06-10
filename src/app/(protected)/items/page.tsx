@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
+import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
+import { InfiniteScrollSentinel } from "@/components/ui/infinite-scroll-sentinel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -37,9 +39,7 @@ type SearchField = "all" | "code" | "name";
 export default function ItemsPage() {
   const { t } = useTranslation();
 
-  const [items, setItems] = useState<ItemSummary[]>([]);
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [searchField, setSearchField] = useState<SearchField>("all");
 
@@ -51,35 +51,24 @@ export default function ItemsPage() {
   const [deleteTarget, setDeleteTarget] = useState<ItemSummary | null>(null);
   const [assignTarget, setAssignTarget] = useState<ItemSummary | null>(null);
 
+  const { items, loading, loadingMore, hasNext, sentinelRef, reset } =
+    useInfiniteScroll({
+      fetchFn: itemsService.list,
+      params: { size: 20, sort_by: "sortOrder", query: search.trim() || undefined },
+    });
+
   useEffect(() => {
     localesApi.list({ size: 50, sort_by: "sortOrder" }).then((r) => setAvailableLocales(r.data)).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    fetchItems();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function fetchItems() {
-    setLoading(true);
-    try {
-      const res = await itemsService.list({ page: 0, size: 50, sort_by: "sortOrder" });
-      setItems(res.data);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // Server already filters by query. Client narrows further only for field-specific searches.
   const filteredItems = useMemo(() => {
-    if (!search.trim()) return items;
+    if (!search.trim() || searchField === "all") return items;
     const q = search.trim().toLowerCase();
     return items.filter((item) => {
       if (searchField === "code") return item.code.toLowerCase().includes(q);
-      if (searchField === "name") return item.locales.some((l) => l.name.toLowerCase().includes(q));
-      return item.code.toLowerCase().includes(q) || item.locales.some((l) => l.name.toLowerCase().includes(q));
+      return item.locales.some((l) => l.name.toLowerCase().includes(q));
     });
   }, [items, search, searchField]);
 
@@ -123,7 +112,7 @@ export default function ItemsPage() {
       await itemsService.remove(deleteTarget.id);
       toast.success(`${t("item.deletedToast")} ${deleteTarget.code}`);
       setDeleteTarget(null);
-      await fetchItems();
+      reset();
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -196,18 +185,21 @@ export default function ItemsPage() {
           {t("item.empty")}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredItems.map((item) => (
-            <ItemCard
-              key={item.id}
-              item={item}
-              defaultName={itemNames[item.id]}
-              onView={(i) => openDetail(i)}
-              onDelete={(i) => setDeleteTarget(i)}
-              onAssignCategories={(i) => setAssignTarget(i)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredItems.map((item) => (
+              <ItemCard
+                key={item.id}
+                item={item}
+                defaultName={itemNames[item.id]}
+                onView={(i) => openDetail(i)}
+                onDelete={(i) => setDeleteTarget(i)}
+                onAssignCategories={(i) => setAssignTarget(i)}
+              />
+            ))}
+          </div>
+          <InfiniteScrollSentinel sentinelRef={sentinelRef} loadingMore={loadingMore} hasNext={hasNext} />
+        </>
       )}
 
       <ItemDialog
@@ -218,7 +210,7 @@ export default function ItemsPage() {
         form={form}
         onFormChange={setForm}
         availableLocales={availableLocales}
-        onSaved={() => fetchItems()}
+        onSaved={reset}
       />
 
       <AssignCategoriesDialog

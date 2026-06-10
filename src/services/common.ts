@@ -18,4 +18,5 @@ export interface ListParams {
   size?: number;
   sort_by?: string;
   sort_dir?: "ASC" | "DESC";
+  query?: string;
 }
