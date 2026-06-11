@@ -17,11 +17,19 @@ export interface MenuCategoryLocale {
   sort_order: number;
 }
 
+export interface MenuDish {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales?: { id: number; locale_id: number; name: string; description?: string; sort_order: number }[];
+}
+
 export interface MenuCategory {
   id: number;
   code: string;
   sort_order: number;
   locales?: MenuCategoryLocale[];
+  dishes?: MenuDish[];
 }
 
 export interface Menu {
@@ -29,7 +37,7 @@ export interface Menu {
   code: string;
   sort_order: number;
   locales?: MenuLocale[];
-  menu_categories?: MenuCategory[];
+  categories?: MenuCategory[];
 }
 
 export interface CreateMenuLocaleRequest {
@@ -56,10 +64,11 @@ export interface UpdateMenuLocaleRequest {
 }
 
 export const menusService = {
-  async list(params: ListParams = {}): Promise<PageResponse<Menu>> {
-    const { page = 0, size = 10, sort_by = "sortOrder", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<Menu>>(`/menus?${query}`);
+  async list(params: ListParams & { detail?: "BASIC" | "WITH_CATEGORIES" | "FULL" } = {}): Promise<PageResponse<Menu>> {
+    const { page = 0, size = 10, sort_by = "sortOrder", sort_dir = "ASC", detail } = params;
+    const qs = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    if (detail) qs.set("detail", detail);
+    return api.get<PageResponse<Menu>>(`/menus?${qs}`);
   },
 
   async get(id: number): Promise<{ menu: Menu }> {

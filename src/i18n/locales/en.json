@@ -543,6 +543,18 @@
     "unassignTitle": "Unassign category?",
     "unassignDesc": "This will remove {{code}} from this menu. The category itself will not be deleted."
   },
+  "menuCategoryDish": {
+    "section": "Dishes",
+    "loading": "Loading dishes…",
+    "none": "No dishes assigned to this category yet.",
+    "selectDish": "Select a dish to assign…",
+    "assign": "Assign",
+    "unassign": "Unassign",
+    "assignedToast": "Dish assigned to category",
+    "unassignedToast": "Dish removed from category",
+    "unassignTitle": "Unassign dish?",
+    "unassignDesc": "This will remove {{code}} from this category. The dish itself will not be deleted."
+  },
   "menuCategory": {
     "pageTitle": "Menu Categories",
     "pageSubtitle": "Manage the categories used to organize menu items.",
@@ -564,6 +576,11 @@
     "deletedToast": "Deleted",
     "deleteTitle": "Delete menu category?",
     "deleteDesc": "This will soft-delete {{code}}. It will no longer appear in any responses.",
+    "viewAll": "All Categories",
+    "viewByMenuType": "By Menu Type",
+    "menuTypeLabel": "Menu Type",
+    "selectMenuType": "Select a menu type…",
+    "errMenuType": "Menu type is required.",
     "errCode": "Code is required.",
     "errLocaleLang": "Locale row {{n}}: select a language.",
     "errLocaleName": "Locale row {{n}}: name is required."
@@ -624,7 +641,20 @@
     "errVariantIngredients": "Variant {{n}}: at least one ingredient is required.",
     "errIngredientItem": "Variant {{n}}, ingredient {{m}}: select an item.",
     "errIngredientQty": "Variant {{n}}, ingredient {{m}}: quantity must be greater than zero.",
-    "errIngredientUnit": "Variant {{n}}, ingredient {{m}}: select a unit."
+    "errIngredientUnit": "Variant {{n}}, ingredient {{m}}: select a unit.",
+    "locale": "locale",
+    "locales": "locales",
+    "viewAll": "All Dishes",
+    "viewByCategory": "By Category",
+    "noDishesByCategory": "No dishes assigned to any category yet.",
+    "assigned": "Assigned",
+    "assignCategories": "Assign to Categories",
+    "assignCategoriesDesc": "Toggle menu categories to assign or unassign this dish.",
+    "noCategoriesAvailable": "No menu categories available.",
+    "assignConfirmTitle": "Assign to category?",
+    "assignConfirmDesc": "This dish will be assigned to the selected category.",
+    "unassignConfirmTitle": "Unassign from category?",
+    "unassignConfirmDesc": "This dish will be removed from the selected category."
   },
   "shopItem": {
     "pageTitle": "Shop Items",

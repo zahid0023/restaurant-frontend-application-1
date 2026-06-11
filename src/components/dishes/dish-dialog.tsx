@@ -48,8 +48,6 @@ export interface DishDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: DishDialogMode;
-  menuId: number;
-  menuCategoryId: number;
   dishId?: number;
   form: DishFormState;
   onFormChange: (form: DishFormState) => void;
@@ -63,8 +61,6 @@ export function DishDialog({
   open,
   onOpenChange,
   mode,
-  menuId,
-  menuCategoryId,
   dishId,
   form,
   onFormChange,
@@ -129,7 +125,7 @@ export function DishDialog({
     if (dishId == null) return;
     setSubmittingGeneral(true);
     try {
-      await dishesService.update(menuCategoryId, dishId, {
+      await dishesService.update(dishId, {
         sort_order: Number(localGeneral.sort_order) || 0,
         is_veg: localGeneral.is_veg,
       });
@@ -181,7 +177,7 @@ export function DishDialog({
     setBusy(key, true);
     try {
       if (isNew) {
-        await dishesService.addLocale(menuId, menuCategoryId, dishId, {
+        await dishesService.addLocale(dishId, {
           locale_id: Number(data.locale_id),
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
@@ -189,7 +185,7 @@ export function DishDialog({
         });
         setNewLocaleRows((prev) => prev.filter((r) => r._rkey !== key));
       } else {
-        await dishesService.updateLocale(menuId, menuCategoryId, dishId, row.id!, {
+        await dishesService.updateLocale(dishId, row.id!, {
           name: data.name.trim(),
           description: data.description?.trim() || undefined,
           sort_order: Number(data.sort_order) || 0,
@@ -210,7 +206,7 @@ export function DishDialog({
     const key = rowKey(row);
     setBusy(key, true);
     try {
-      await dishesService.removeLocale(menuId, menuCategoryId, dishId, row.id);
+      await dishesService.removeLocale(dishId, row.id);
       toast.success(t("locale.removedToast"));
       await onSaved?.();
     } catch (err) {
@@ -381,7 +377,7 @@ export function DishDialog({
     setSubmitting(true);
     try {
       const code = form.code.trim().toUpperCase();
-      await dishesService.create(menuCategoryId, {
+      await dishesService.create({
         code,
         sort_order: Number(form.sort_order) || 0,
         is_veg: form.is_veg,

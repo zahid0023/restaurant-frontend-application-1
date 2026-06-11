@@ -10,6 +10,7 @@ export interface MenuCategoryLocaleRow {
 }
 
 export interface MenuCategoryFormState {
+  menu_type_id: number | "";
   code: string;
   sort_order: number;
   locales: MenuCategoryLocaleRow[];

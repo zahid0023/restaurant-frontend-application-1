@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { menuCategoriesService } from "@/services/menu-categories";
+import type { Menu } from "@/services/menus";
 import { toast } from "sonner";
 import type { MenuCategoryDialogMode, MenuCategoryFormState } from "./types";
 
@@ -14,6 +22,7 @@ export interface MenuCategoryGeneralInfoProps {
   form: MenuCategoryFormState;
   onFormChange: (patch: Partial<MenuCategoryFormState>) => void;
   categoryId?: number;
+  availableMenuTypes: Menu[];
   onSaved?: () => void | Promise<void>;
   editing: boolean;
   onEditingChange: (v: boolean) => void;
@@ -25,6 +34,7 @@ export function MenuCategoryGeneralInfo({
   form,
   onFormChange,
   categoryId,
+  availableMenuTypes,
   onSaved,
   editing,
   onEditingChange,
@@ -90,6 +100,26 @@ export function MenuCategoryGeneralInfo({
 
       <Card>
         <CardContent className="space-y-4">
+          {mode === "create" && (
+            <div className="space-y-2">
+              <Label htmlFor="mc-menu-type" className="text-xs font-medium">{t("menuCategory.menuTypeLabel")} *</Label>
+              <Select
+                value={form.menu_type_id ? String(form.menu_type_id) : ""}
+                onValueChange={(v) => onFormChange({ menu_type_id: Number(v) })}
+              >
+                <SelectTrigger id="mc-menu-type" className="w-full">
+                  <SelectValue placeholder={t("menuCategory.selectMenuType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableMenuTypes.map((mt) => (
+                    <SelectItem key={mt.id} value={String(mt.id)}>
+                      {mt.locales?.[0]?.name ? `${mt.locales[0].name} (${mt.code})` : mt.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="mc-code" className="text-xs font-medium">{t("common.code")} *</Label>
             <Input

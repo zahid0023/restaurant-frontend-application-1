@@ -9,12 +9,19 @@ export interface MenuCategoryLocale {
   sort_order: number;
 }
 
+export interface MenuCategoryDish {
+  id: number;
+  code: string;
+  sort_order: number;
+  locales?: { id: number; locale_id: number; name: string; description?: string; sort_order: number }[];
+}
+
 export interface MenuCategory {
   id: number;
-  menu_id: number;
   code: string;
   sort_order: number;
   locales?: MenuCategoryLocale[];
+  dishes?: MenuCategoryDish[];
 }
 
 export interface CreateMenuCategoryLocaleRequest {
@@ -31,6 +38,7 @@ export interface UpdateMenuCategoryLocaleRequest {
 }
 
 export interface CreateMenuCategoryRequest {
+  menu_type_id: number;
   code: string;
   sort_order: number;
   locales?: CreateMenuCategoryLocaleRequest[];
@@ -41,10 +49,16 @@ export interface UpdateMenuCategoryRequest {
 }
 
 export const menuCategoriesService = {
-  async list(params: ListParams = {}): Promise<PageResponse<MenuCategory>> {
-    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
+  async listAll(params: ListParams = {}): Promise<PageResponse<MenuCategory>> {
+    const { page = 0, size = 20, sort_by = "sortOrder", sort_dir = "ASC" } = params;
+    const qs = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    return api.get<PageResponse<MenuCategory>>(`/menu-categories?${qs}`);
+  },
+
+  async list(menuTypeId: number, params: ListParams = {}): Promise<PageResponse<MenuCategory>> {
+    const { page = 0, size = 20, sort_by = "sortOrder", sort_dir = "ASC" } = params;
     const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<MenuCategory>>(`/menu-categories?${query}`);
+    return api.get<PageResponse<MenuCategory>>(`/menu-categories/by/${menuTypeId}?${query}`);
   },
 
   async get(id: number): Promise<{ menu_category: MenuCategory }> {
@@ -73,5 +87,13 @@ export const menuCategoriesService = {
 
   async removeLocale(categoryId: number, localeId: number): Promise<MutationResponse> {
     return api.delete<MutationResponse>(`/menu-categories/${categoryId}/locales/${localeId}`);
+  },
+
+  async assignDish(categoryId: number, dishId: number): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/menu-categories/${categoryId}/dishes/assign`, { dish_id: dishId });
+  },
+
+  async unassignDish(categoryId: number, dishId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/menu-categories/${categoryId}/dishes/${dishId}/unassign`);
   },
 };

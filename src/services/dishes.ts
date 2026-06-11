@@ -11,7 +11,6 @@ export interface DishLocale {
 
 export interface Dish {
   id: number;
-  menu_category_id: number;
   code: string;
   sort_order: number;
   is_veg?: boolean;
@@ -74,37 +73,38 @@ export interface UpdateDishRequest {
 }
 
 export const dishesService = {
-  async list(menuCategoryId: number, params: ListParams = {}): Promise<PageResponse<Dish>> {
-    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
-    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
-    return api.get<PageResponse<Dish>>(`/menu-categories/${menuCategoryId}/dishes?${query}`);
+  async list(params: ListParams = {}): Promise<PageResponse<Dish>> {
+    const { page = 0, size = 20, sort_by = "sortOrder", sort_dir = "ASC", query } = params;
+    const qs = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    if (query) qs.set("query", query);
+    return api.get<PageResponse<Dish>>(`/dishes?${qs}`);
   },
 
-  async get(menuCategoryId: number, id: number): Promise<{ dish: Dish }> {
-    return api.get<{ dish: Dish }>(`/menu-categories/${menuCategoryId}/dishes/${id}`);
+  async get(id: number): Promise<{ dish: Dish }> {
+    return api.get<{ dish: Dish }>(`/dishes/${id}`);
   },
 
-  async create(menuCategoryId: number, body: CreateDishRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(`/menu-categories/${menuCategoryId}/dishes`, body);
+  async create(body: CreateDishRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>("/dishes", body);
   },
 
-  async update(menuCategoryId: number, id: number, body: UpdateDishRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/menu-categories/${menuCategoryId}/dishes/${id}`, body);
+  async update(id: number, body: UpdateDishRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${id}`, body);
   },
 
-  async remove(menuCategoryId: number, id: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/menu-categories/${menuCategoryId}/dishes/${id}`);
+  async remove(id: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${id}`);
   },
 
-  async addLocale(menuId: number, menuCategoryId: number, dishId: number, body: CreateDishLocaleRequest): Promise<MutationResponse> {
-    return api.post<MutationResponse>(`/menus/${menuId}/menu-categories/${menuCategoryId}/dishes/${dishId}/locales`, body);
+  async addLocale(dishId: number, body: CreateDishLocaleRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/dishes/${dishId}/locales`, body);
   },
 
-  async updateLocale(menuId: number, menuCategoryId: number, dishId: number, localeId: number, body: UpdateDishLocaleRequest): Promise<MutationResponse> {
-    return api.put<MutationResponse>(`/menus/${menuId}/menu-categories/${menuCategoryId}/dishes/${dishId}/locales/${localeId}`, body);
+  async updateLocale(dishId: number, localeId: number, body: UpdateDishLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${dishId}/locales/${localeId}`, body);
   },
 
-  async removeLocale(menuId: number, menuCategoryId: number, dishId: number, localeId: number): Promise<MutationResponse> {
-    return api.delete<MutationResponse>(`/menus/${menuId}/menu-categories/${menuCategoryId}/dishes/${dishId}/locales/${localeId}`);
+  async removeLocale(dishId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${dishId}/locales/${localeId}`);
   },
 };

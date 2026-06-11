@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, Tag } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,17 +9,18 @@ import type { Dish } from "@/services/dishes";
 
 export interface DishCardProps {
   dish: Dish;
+  defaultName?: string;
   onView?: (dish: Dish) => void;
   onDelete?: (dish: Dish) => void;
+  onAssignCategories?: (dish: Dish) => void;
 }
 
-export function DishCard({ dish, onView, onDelete }: DishCardProps) {
+export function DishCard({ dish, defaultName, onView, onDelete, onAssignCategories }: DishCardProps) {
   const { t } = useTranslation();
 
-  const title = dish.locales?.[0]?.name?.trim() || dish.code;
-  const subtitle = dish.locales?.[0]?.name?.trim()
-    ? `${dish.code} · ID #${dish.id}`
-    : `ID #${dish.id}`;
+  const title = defaultName?.trim() || dish.code;
+  const subtitle = defaultName?.trim() ? `${dish.code} · ID #${dish.id}` : `ID #${dish.id}`;
+  const localeCount = dish.locales?.length ?? 0;
 
   const handleAction = (e: React.MouseEvent, handler?: (d: Dish) => void) => {
     e.stopPropagation();
@@ -63,24 +64,29 @@ export function DishCard({ dish, onView, onDelete }: DishCardProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 text-sm mt-4">
-        <div>
-          <p className="text-xs text-muted-foreground">{t("common.code")}</p>
-          <p className="font-medium font-mono">{dish.code}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted-foreground">{t("field.sort")}</p>
-          <p className="font-medium">{dish.sort_order}</p>
-        </div>
-      </div>
-
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
-        <Badge variant="secondary">#{dish.sort_order}</Badge>
-        {dish.is_veg && (
-          <Badge variant="outline" className="text-green-600 border-green-600">
-            {t("dish.veg")}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">#{dish.sort_order}</Badge>
+          {dish.is_veg && (
+            <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
+              {t("dish.veg")}
+            </Badge>
+          )}
+          {onAssignCategories && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-xs gap-1 px-2 text-muted-foreground hover:text-foreground"
+              onClick={(e) => handleAction(e, onAssignCategories)}
+            >
+              <Tag className="h-3 w-3" />
+              {t("dish.assignCategories")}
+            </Button>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {localeCount} {localeCount !== 1 ? t("dish.locales") : t("dish.locale")}
+        </span>
       </div>
     </Card>
   );

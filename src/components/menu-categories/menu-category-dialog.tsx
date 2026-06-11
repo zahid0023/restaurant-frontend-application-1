@@ -16,12 +16,14 @@ import { DialogEntityHeader } from "@/components/commons/dialog-entity-header";
 import { DialogCreateFooter } from "@/components/commons/dialog-create-footer";
 import { menuCategoriesService } from "@/services/menu-categories";
 import type { Locale } from "@/services/locales";
+import type { Menu } from "@/services/menus";
 import { toast } from "sonner";
 import type { MenuCategoryDialogMode, MenuCategoryFormState } from "./types";
 import { MenuCategoryGeneralInfo } from "./menu-category-general-info";
 import { MenuCategoryLocaleTranslations } from "./menu-category-locale-translations";
 
 export const emptyMenuCategoryForm: MenuCategoryFormState = {
+  menu_type_id: "",
   code: "",
   sort_order: 0,
   locales: [],
@@ -35,6 +37,7 @@ export interface MenuCategoryDialogProps {
   form: MenuCategoryFormState;
   onFormChange: (form: MenuCategoryFormState) => void;
   availableLocales: Locale[];
+  availableMenuTypes: Menu[];
   onSaved?: () => void | Promise<void>;
 }
 
@@ -46,6 +49,7 @@ export function MenuCategoryDialog({
   form,
   onFormChange,
   availableLocales,
+  availableMenuTypes,
   onSaved,
 }: MenuCategoryDialogProps) {
   const { t } = useTranslation();
@@ -63,7 +67,7 @@ export function MenuCategoryDialog({
   }, [open]);
 
   const isDirty = mode === "create"
-    ? form.code.trim() !== "" || form.locales.length > 0
+    ? form.menu_type_id !== "" || form.code.trim() !== "" || form.locales.length > 0
     : generalEditing || translationsEditing;
 
   function requestClose() {
@@ -74,6 +78,7 @@ export function MenuCategoryDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (mode !== "create") return;
+    if (!form.menu_type_id) { toast.error(t("menuCategory.errMenuType")); return; }
     if (!form.code.trim()) { toast.error(t("menuCategory.errCode")); return; }
     for (const [i, row] of form.locales.entries()) {
       if (!row.locale_id) { toast.error(t("menuCategory.errLocaleLang", { n: i + 1 })); return; }
@@ -83,6 +88,7 @@ export function MenuCategoryDialog({
     try {
       const code = form.code.trim().toUpperCase();
       await menuCategoriesService.create({
+        menu_type_id: Number(form.menu_type_id),
         code,
         sort_order: Number(form.sort_order) || 0,
         locales: form.locales.map((row) => ({
@@ -122,6 +128,7 @@ export function MenuCategoryDialog({
                 form={form}
                 onFormChange={(patch) => onFormChange({ ...form, ...patch })}
                 categoryId={categoryId}
+                availableMenuTypes={availableMenuTypes}
                 onSaved={onSaved}
                 editing={generalEditing}
                 onEditingChange={setGeneralEditing}
