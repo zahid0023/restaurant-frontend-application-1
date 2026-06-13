@@ -78,7 +78,8 @@
     "prev": "আগের",
     "next": "পরের",
     "page": "পৃষ্ঠা",
-    "of": "এর মধ্যে"
+    "of": "এর মধ্যে",
+    "saved": "সংরক্ষিত হয়েছে"
   },
   "toast": {
     "codeRequired": "দেশের কোড প্রয়োজন।",
@@ -167,7 +168,9 @@
     "subtitle": "প্ল্যাটফর্মে ব্যবহৃত ভৌগোলিক দেশগুলো পরিচালনা করুন।",
     "new": "নতুন দেশ",
     "loading": "দেশ লোড হচ্ছে…",
-    "empty": "কোনো দেশ পাওয়া যায়নি।"
+    "empty": "কোনো দেশ পাওয়া যায়নি।",
+    "createdToast": "দেশ তৈরি হয়েছে",
+    "updatedToast": "দেশ আপডেট হয়েছে"
   },
   "country": {
     "back": "দেশে ফিরে যান",
@@ -482,20 +485,9 @@
     "variants": "ভ্যারিয়েন্টসমূহ",
     "addVariant": "ভ্যারিয়েন্ট যোগ করুন",
     "noVariants": "এখনো কোনো ভ্যারিয়েন্ট নেই।",
-    "variantRow": "ভ্যারিয়েন্ট {{n}}",
     "variantPrice": "মূল্য",
     "variantIsDefault": "ডিফল্ট",
-    "variantIsAvailable": "উপলব্ধ",
-    "variantIsFeatured": "বৈশিষ্ট্যযুক্ত",
     "variantDefault": "ডিফল্ট",
-    "variantNotDefault": "ডিফল্ট নয়",
-    "variantAvailable": "উপলব্ধ",
-    "variantNotAvailable": "উপলব্ধ নয়",
-    "variantFeatured": "বৈশিষ্ট্যযুক্ত",
-    "variantNotFeatured": "বৈশিষ্ট্যযুক্ত নয়",
-    "variantLocales": "ভ্যারিয়েন্ট অনুবাদ",
-    "recipe": "রেসিপি",
-    "recipeCode": "রেসিপি কোড",
     "ingredients": "উপকরণ",
     "addIngredient": "উপকরণ যোগ করুন",
     "noIngredients": "এখনো কোনো উপকরণ নেই।",
@@ -503,8 +495,6 @@
     "quantity": "পরিমাণ",
     "selectUnit": "একক নির্বাচন করুন",
     "errVariantCode": "ভ্যারিয়েন্ট {{n}}: কোড প্রয়োজন।",
-    "errVariantRecipeCode": "ভ্যারিয়েন্ট {{n}}: রেসিপি কোড প্রয়োজন।",
-    "errVariantIngredients": "ভ্যারিয়েন্ট {{n}}: কমপক্ষে একটি উপকরণ প্রয়োজন।",
     "errIngredientItem": "ভ্যারিয়েন্ট {{n}}, উপকরণ {{m}}: একটি আইটেম নির্বাচন করুন।",
     "errIngredientQty": "ভ্যারিয়েন্ট {{n}}, উপকরণ {{m}}: পরিমাণ শূন্যের বেশি হতে হবে।",
     "errIngredientUnit": "ভ্যারিয়েন্ট {{n}}, উপকরণ {{m}}: একটি একক নির্বাচন করুন।",

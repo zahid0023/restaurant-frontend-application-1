@@ -56,15 +56,21 @@ export function DishDialog({
   const { t } = useTranslation();
 
   const [submitting, setSubmitting] = useState(false);
+  const [generalEditing, setGeneralEditing] = useState(false);
+  const [translationsEditing, setTranslationsEditing] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
-    if (!open) setConfirmClose(false);
+    if (!open) {
+      setGeneralEditing(false);
+      setTranslationsEditing(false);
+      setConfirmClose(false);
+    }
   }, [open]);
 
   const isDirty = mode === "create"
     ? form.code.trim() !== "" || form.locales.length > 0
-    : false;
+    : generalEditing || translationsEditing;
 
   function requestClose() {
     if (isDirty) setConfirmClose(true);
@@ -91,9 +97,8 @@ export function DishDialog({
           description: row.description.trim() || undefined,
           sort_order: Number(row.sort_order) || 0,
         })),
-        variants: [],
       });
-      toast.success(`${t("dish.createdToast")}: ${code}`);
+      toast.success(t("dish.createdToast"));
       onOpenChange(false);
       await onSaved?.();
     } catch (err) {
@@ -103,11 +108,15 @@ export function DishDialog({
     }
   }
 
+  const isEditing = generalEditing || translationsEditing;
+  const headerTitle = mode === "create" ? t("dish.titleCreate") : (isEditing ? t("dish.titleEdit") : t("dish.titleView"));
+  const headerDesc = mode === "create" ? t("dish.descCreate") : (isEditing ? t("dish.descEdit") : t("dish.descView"));
+
   return (
     <>
       <Dialog open={open} onOpenChange={(v) => { if (!v) requestClose(); }}>
         <DialogContent
-          className="max-w-2xl p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]"
+          className="max-w-3xl p-0 gap-0 overflow-hidden flex flex-col max-h-[90vh]"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => { e.preventDefault(); requestClose(); }}
         >
@@ -116,33 +125,34 @@ export function DishDialog({
             {/* HEADER */}
             <DialogEntityHeader
               icon={<UtensilsCrossed className="h-4 w-4" />}
-              title={mode === "create" ? t("dish.titleCreate") : t("dish.titleView")}
-              description={mode === "create" ? t("dish.descCreate") : t("dish.descView")}
+              title={headerTitle}
+              description={headerDesc}
             />
 
             {/* CONTENT */}
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
               <DishGeneralInfo
-                key={`general-${dishId}-${open}`}
                 mode={mode}
                 dishId={dishId}
-                code={form.code}
-                sortOrder={form.sort_order}
-                onCodeChange={(v) => onFormChange({ ...form, code: v })}
-                onSortOrderChange={(v) => onFormChange({ ...form, sort_order: v })}
-                onUpdated={(sortOrder) => onFormChange({ ...form, sort_order: sortOrder })}
+                form={form}
+                onFormChange={(patch) => onFormChange({ ...form, ...patch })}
                 onSaved={onSaved}
+                editing={generalEditing}
+                onEditingChange={setGeneralEditing}
+                open={open}
               />
 
               <DishLocaleTranslations
-                key={`locales-${dishId}-${open}`}
                 mode={mode}
                 dishId={dishId}
-                locales={form.locales}
+                form={form}
+                onFormChange={onFormChange}
                 availableLocales={availableLocales}
-                onLocalesChange={(rows) => onFormChange({ ...form, locales: rows })}
                 onSaved={onSaved}
+                editing={translationsEditing}
+                onEditingChange={setTranslationsEditing}
+                open={open}
               />
 
             </div>

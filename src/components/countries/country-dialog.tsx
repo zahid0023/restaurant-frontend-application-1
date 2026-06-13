@@ -96,7 +96,7 @@ export function CountryDialog({
           sort_order: Number(row.sort_order) || 0,
         })),
       });
-      toast.success(`Created ${code}`);
+      toast.success(t("countries.createdToast"));
       onOpenChange(false);
       await onSaved?.();
     } catch (err) {

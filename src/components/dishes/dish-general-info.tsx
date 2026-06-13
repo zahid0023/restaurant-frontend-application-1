@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,48 +9,51 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { dishesService } from "@/services/dishes";
 import { toast } from "sonner";
+import type { DishFormState } from "./types";
 
 export interface DishGeneralInfoProps {
   mode: "create" | "view";
   dishId?: number;
-  code: string;
-  sortOrder: number;
-  onCodeChange?: (v: string) => void;
-  onSortOrderChange?: (v: number) => void;
-  /** view mode — called with new sort_order after successful inline save */
-  onUpdated?: (sortOrder: number) => void;
+  form: DishFormState;
+  onFormChange: (patch: Partial<DishFormState>) => void;
   onSaved?: () => void | Promise<void>;
+  editing: boolean;
+  onEditingChange: (v: boolean) => void;
+  open: boolean;
 }
 
 export function DishGeneralInfo({
   mode,
   dishId,
-  code,
-  sortOrder,
-  onCodeChange,
-  onSortOrderChange,
-  onUpdated,
+  form,
+  onFormChange,
   onSaved,
+  editing,
+  onEditingChange,
+  open,
 }: DishGeneralInfoProps) {
   const { t } = useTranslation();
-  const [generalEditing, setGeneralEditing] = useState(false);
-  const [localSortOrder, setLocalSortOrder] = useState(0);
+  const [local, setLocal] = useState({ sort_order: 0 });
   const [submitting, setSubmitting] = useState(false);
 
+  useEffect(() => {
+    if (!open) setSubmitting(false);
+  }, [open]);
+
   function startEdit() {
-    setLocalSortOrder(sortOrder);
-    setGeneralEditing(true);
+    setLocal({ sort_order: form.sort_order });
+    onEditingChange(true);
   }
 
-  async function saveGeneral() {
+  async function save() {
     if (dishId == null) return;
     setSubmitting(true);
     try {
-      const newSortOrder = Number(localSortOrder) || 0;
+      const newSortOrder = Number(local.sort_order) || 0;
       await dishesService.update(dishId, { sort_order: newSortOrder });
-      toast.success(t("common.save"));
-      setGeneralEditing(false);
-      onUpdated?.(newSortOrder);
+      toast.success(t("common.saved"));
+      onEditingChange(false);
+      onFormChange({ sort_order: newSortOrder });
       await onSaved?.();
     } catch (err) {
       toast.error((err as Error).message);
@@ -59,7 +62,8 @@ export function DishGeneralInfo({
     }
   }
 
-  const displaySortOrder = generalEditing ? localSortOrder : sortOrder;
+  const sortValue = editing ? local.sort_order : form.sort_order;
+  const isReadOnly = !editing && mode !== "create";
 
   return (
     <div className="space-y-4">
@@ -70,18 +74,17 @@ export function DishGeneralInfo({
             {t("common.generalInfo")}
           </h3>
         </div>
-
-        {mode !== "create" && !generalEditing && (
+        {mode !== "create" && !editing && (
           <Button type="button" size="sm" variant="outline" onClick={startEdit} className="h-7 text-xs px-2.5 gap-1.5">
             <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
           </Button>
         )}
-        {generalEditing && (
+        {editing && (
           <div className="flex items-center gap-1.5">
-            <Button type="button" size="sm" variant="outline" onClick={() => setGeneralEditing(false)} disabled={submitting} className="h-7 text-xs px-2.5 gap-1.5">
+            <Button type="button" size="sm" variant="outline" onClick={() => onEditingChange(false)} disabled={submitting} className="h-7 text-xs px-2.5 gap-1.5">
               <X className="h-3.5 w-3.5" /> {t("common.cancel")}
             </Button>
-            <Button type="button" size="sm" onClick={saveGeneral} disabled={submitting} className="h-7 text-xs px-2.5 gap-1.5">
+            <Button type="button" size="sm" onClick={save} disabled={submitting} className="h-7 text-xs px-2.5 gap-1.5">
               <Check className="h-3.5 w-3.5" />
               {submitting ? t("common.saving") : t("common.save")}
             </Button>
@@ -95,8 +98,8 @@ export function DishGeneralInfo({
             <Label htmlFor="dish-code" className="text-xs font-medium">{t("common.code")} *</Label>
             <Input
               id="dish-code"
-              value={code}
-              onChange={(e) => onCodeChange?.(e.target.value)}
+              value={form.code}
+              onChange={(e) => onFormChange({ code: e.target.value })}
               placeholder="BURGER_CLASSIC"
               required={mode === "create"}
               disabled={mode !== "create"}
@@ -108,13 +111,13 @@ export function DishGeneralInfo({
             <Input
               id="dish-sort"
               type="number"
-              value={displaySortOrder}
+              value={sortValue}
               onChange={(e) => {
-                if (mode === "create") onSortOrderChange?.(Number(e.target.value));
-                else setLocalSortOrder(Number(e.target.value));
+                if (mode === "create") onFormChange({ sort_order: Number(e.target.value) });
+                else setLocal((p) => ({ ...p, sort_order: Number(e.target.value) }));
               }}
               required={mode === "create"}
-              disabled={!generalEditing && mode !== "create"}
+              disabled={isReadOnly}
             />
           </div>
         </CardContent>

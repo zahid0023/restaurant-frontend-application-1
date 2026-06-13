@@ -131,7 +131,7 @@ export default function DishesPage() {
     setDialogOpen(true);
   }
 
-  async function openDetail(dish: Dish | MenuCategoryDish) {
+  async function openDetail(dish: Dish | MenuDish) {
     setMode("view");
     setActiveId(dish.id);
     setForm({ code: dish.code, sort_order: dish.sort_order, locales: [] });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, Languages, Pencil, Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,35 +18,48 @@ import {
 import { dishesService } from "@/services/dishes";
 import type { Locale } from "@/services/locales";
 import { toast } from "sonner";
-import type { DishLocaleRow } from "./types";
+import type { DishFormState, DishLocaleRow } from "./types";
 
 type NewLocaleRow = DishLocaleRow & { _rkey: string };
 
 export interface DishLocaleTranslationsProps {
   mode: "create" | "view";
   dishId?: number;
-  locales: DishLocaleRow[];
+  form: DishFormState;
+  onFormChange: (form: DishFormState) => void;
   availableLocales: Locale[];
-  /** create mode — update the locale rows array in the parent */
-  onLocalesChange?: (rows: DishLocaleRow[]) => void;
   /** called after any successful API mutation (add / update / delete) */
   onSaved?: () => void | Promise<void>;
+  editing: boolean;
+  onEditingChange: (v: boolean) => void;
+  open: boolean;
 }
 
 export function DishLocaleTranslations({
   mode,
   dishId,
-  locales,
+  form,
+  onFormChange,
   availableLocales,
-  onLocalesChange,
   onSaved,
+  editing,
+  onEditingChange,
+  open,
 }: DishLocaleTranslationsProps) {
   const { t } = useTranslation();
-  const [translationsEditing, setTranslationsEditing] = useState(false);
+  const locales = form.locales;
   const [newLocaleRows, setNewLocaleRows] = useState<NewLocaleRow[]>([]);
   const [rowEditData, setRowEditData] = useState<Record<string, DishLocaleRow>>({});
   const [busyRowKeys, setBusyRowKeys] = useState<Set<string>>(new Set());
   const rKeyCounter = useRef(0);
+
+  useEffect(() => {
+    if (!open) {
+      setNewLocaleRows([]);
+      setRowEditData({});
+      setBusyRowKeys(new Set());
+    }
+  }, [open]);
 
   const allLocaleRows: Array<DishLocaleRow & { _rkey: string }> = [
     ...locales.map((l) => ({ ...l, _rkey: `e_${l.id}` })),
@@ -101,7 +114,7 @@ export function DishLocaleTranslations({
         });
       }
       setRowEditData((prev) => { const n = { ...prev }; delete n[key]; return n; });
-      toast.success(t("common.save"));
+      toast.success(t("common.saved"));
       await onSaved?.();
     } catch (err) {
       toast.error((err as Error).message);
@@ -151,18 +164,21 @@ export function DishLocaleTranslations({
       locales.map((r) => r.locale_id).filter((v): v is number => typeof v === "number"),
     );
     const nextLocale = availableLocales.find((l) => !usedIds.has(l.id));
-    onLocalesChange?.([
-      ...locales,
-      { locale_id: nextLocale ? nextLocale.id : "", name: "", description: "", sort_order: locales.length + 1, _new: true },
-    ]);
+    onFormChange({
+      ...form,
+      locales: [
+        ...locales,
+        { locale_id: nextLocale ? nextLocale.id : "", name: "", description: "", sort_order: locales.length + 1, _new: true },
+      ],
+    });
   }
 
   function updateLocaleRow(idx: number, patch: Partial<DishLocaleRow>) {
-    onLocalesChange?.(locales.map((row, i) => (i === idx ? { ...row, ...patch } : row)));
+    onFormChange({ ...form, locales: locales.map((row, i) => (i === idx ? { ...row, ...patch } : row)) });
   }
 
   function removeLocaleRow(idx: number) {
-    onLocalesChange?.(locales.filter((_, i) => i !== idx));
+    onFormChange({ ...form, locales: locales.filter((_, i) => i !== idx) });
   }
 
   // ─── Render ─────────────────────────────────────────────────────────────────
@@ -177,18 +193,18 @@ export function DishLocaleTranslations({
           </h3>
         </div>
 
-        {mode !== "create" && !translationsEditing && (
+        {mode !== "create" && !editing && (
           <Button type="button" size="sm" variant="outline"
-            onClick={() => setTranslationsEditing(true)}
+            onClick={() => onEditingChange(true)}
             className="h-7 text-xs px-2.5 gap-1.5"
           >
             <Pencil className="h-3.5 w-3.5" /> {t("common.edit")}
           </Button>
         )}
-        {translationsEditing && (
+        {editing && (
           <div className="flex items-center gap-1.5">
             <Button type="button" size="sm" variant="outline"
-              onClick={() => setTranslationsEditing(false)}
+              onClick={() => onEditingChange(false)}
               className="h-7 text-xs px-2.5 gap-1.5"
             >
               <X className="h-3.5 w-3.5" /> {t("common.cancel")}
@@ -214,7 +230,7 @@ export function DishLocaleTranslations({
       <Card className="gap-0 py-0 overflow-hidden">
 
         {/* VIEW mode */}
-        {!translationsEditing && mode !== "create" && (
+        {!editing && mode !== "create" && (
           locales.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
               <Languages className="h-4 w-4 mr-2 opacity-40" />
@@ -345,8 +361,8 @@ export function DishLocaleTranslations({
           )
         )}
 
-        {/* EDIT mode (view mode with translationsEditing active) */}
-        {translationsEditing && (
+        {/* EDIT mode (view mode with editing active) */}
+        {editing && (
           allLocaleRows.length === 0 ? (
             <div className="flex items-center justify-center py-8 text-sm text-muted-foreground">
               <Languages className="h-4 w-4 mr-2 opacity-40" />

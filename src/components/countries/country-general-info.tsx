@@ -52,7 +52,7 @@ export function CountryGeneralInfo({
         phone_code: local.phone_code.trim() || undefined,
         sort_order: Number(local.sort_order) || 0,
       });
-      toast.success(`Updated ${form.code.toUpperCase()}`);
+      toast.success(t("countries.updatedToast"));
       onEditingChange(false);
       onFormChange({
         iso3_code: local.iso3_code.trim(),
