@@ -24,7 +24,7 @@ import { CityLocaleTranslations } from "./city-locale-translations";
 export const emptyCityForm: CityFormState = {
   code: "",
   sort_order: 0,
-  locales: [],
+  locales: [{ locale_id: "", name: "", description: "", sort_order: 0 }],
 };
 
 export interface CityDialogProps {

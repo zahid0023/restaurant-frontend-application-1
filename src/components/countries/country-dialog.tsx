@@ -26,7 +26,7 @@ export const emptyCountryForm: CountryFormState = {
   iso3_code: "",
   phone_code: "",
   sort_order: 0,
-  locales: [],
+  locales: [{ locale_id: "", name: "", description: "", sort_order: 0 }],
 };
 
 export interface CountryDialogProps {

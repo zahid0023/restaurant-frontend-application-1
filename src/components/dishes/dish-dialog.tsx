@@ -29,7 +29,7 @@ import { DishLocaleTranslations } from "./dish-locale-translations";
 export const emptyDishForm: DishFormState = {
   code: "",
   sort_order: 0,
-  locales: [],
+  locales: [{ locale_id: "", name: "", description: "", sort_order: 0 }],
 };
 
 export interface DishDialogProps {
