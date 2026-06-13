@@ -19,6 +19,7 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { InfiniteScrollSentinel } from "@/components/ui/infinite-scroll-sentinel";
 import { DishCard } from "@/components/dishes/dish-card";
 import { DishDialog, emptyDishForm } from "@/components/dishes/dish-dialog";
+import { DishOverviewDialog } from "@/components/dishes/dish-overview-dialog";
 import { AssignMenuCategoriesDialog } from "@/components/dishes/assign-menu-categories-dialog";
 import type { DishDialogMode, DishFormState } from "@/components/dishes/types";
 import { dishesService, type Dish } from "@/services/dishes";
@@ -50,6 +51,7 @@ export default function DishesPage() {
   const [activeId, setActiveId] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<DishFormState>(emptyDishForm);
 
+  const [overviewTarget, setOverviewTarget] = useState<Dish | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Dish | null>(null);
   const [assignTarget, setAssignTarget] = useState<Dish | null>(null);
 
@@ -132,7 +134,7 @@ export default function DishesPage() {
   async function openDetail(dish: Dish | MenuCategoryDish) {
     setMode("view");
     setActiveId(dish.id);
-    setForm({ code: dish.code, sort_order: dish.sort_order, is_veg: (dish as Dish).is_veg ?? false, locales: [], variants: [] });
+    setForm({ code: dish.code, sort_order: dish.sort_order, locales: [] });
     setDialogOpen(true);
     try {
       const res = await dishesService.get(dish.id);
@@ -165,7 +167,7 @@ export default function DishesPage() {
   const hasGroupedResults = filteredGrouped.length > 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
+    <div className="relative max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
@@ -244,6 +246,7 @@ export default function DishesPage() {
                   key={d.id}
                   dish={d}
                   defaultName={dishNames[d.id]}
+                  onOverview={(dish) => setOverviewTarget(dish)}
                   onView={openDetail}
                   onDelete={(dish) => setDeleteTarget(dish)}
                   onAssignCategories={(dish) => setAssignTarget(dish)}
@@ -308,6 +311,7 @@ export default function DishesPage() {
                             key={d.id}
                             dish={d as Dish}
                             defaultName={d.locales?.[0]?.name}
+                            onOverview={() => setOverviewTarget(d as Dish)}
                             onView={() => openDetail(d)}
                             onDelete={() => setDeleteTarget(d as Dish)}
                             onAssignCategories={() => setAssignTarget(d as Dish)}
@@ -322,6 +326,13 @@ export default function DishesPage() {
           </div>
         )
       )}
+
+      <DishOverviewDialog
+        open={!!overviewTarget}
+        onOpenChange={(o) => !o && setOverviewTarget(null)}
+        dish={overviewTarget}
+        dishName={overviewTarget ? (dishNames[overviewTarget.id] || overviewTarget.code) : undefined}
+      />
 
       <DishDialog
         open={dialogOpen}

@@ -99,4 +99,20 @@ export const itemsService = {
   async removeLocale(itemId: number, localeId: number): Promise<MutationResponse> {
     return api.delete<MutationResponse>(`/items/${itemId}/locales/${localeId}`);
   },
+
+  async listAll(params: Omit<ListParams, "page" | "size"> = {}): Promise<ItemSummary[]> {
+    const { sort_by = "sortOrder", sort_dir = "ASC", query } = params;
+    const all: ItemSummary[] = [];
+    let page = 0;
+    let hasNext = true;
+    while (hasNext) {
+      const qs = new URLSearchParams({ page: String(page), size: "50", sort_by, sort_dir });
+      if (query) qs.set("query", query);
+      const res = await api.get<PageResponse<ItemSummary>>(`/items?${qs}`);
+      all.push(...res.data);
+      hasNext = res.has_next;
+      page++;
+    }
+    return all;
+  },
 };

@@ -13,8 +13,40 @@ export interface Dish {
   id: number;
   code: string;
   sort_order: number;
-  is_veg?: boolean;
   locales?: DishLocale[];
+}
+
+export interface DishVariantLocale {
+  id: number;
+  locale_id: number;
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface DishVariantIngredient {
+  id: number;
+  dish_variant_id: number;
+  item_id: number;
+  quantity: number;
+  unit_id: number;
+  sort_order: number;
+}
+
+export interface DishVariant {
+  id: number;
+  dish_id: number;
+  code: string;
+  sort_order: number;
+  price: number;
+  is_default: boolean;
+  is_veg: boolean;
+  locales?: DishVariantLocale[];
+  ingredients?: DishVariantIngredient[];
+}
+
+export interface DishDetail extends Dish {
+  variants?: DishVariant[];
 }
 
 export interface CreateDishLocaleRequest {
@@ -30,21 +62,29 @@ export interface UpdateDishLocaleRequest {
   sort_order: number;
 }
 
-export interface CreateDishIngredientRequest {
-  item_id: number;
-  quantity: number;
-  unit_id: number;
-}
-
-export interface CreateDishRecipeRequest {
-  code: string;
-  ingredients: CreateDishIngredientRequest[];
-}
-
 export interface CreateDishVariantLocaleRequest {
   locale_id: number;
   name: string;
   description?: string;
+  sort_order: number;
+}
+
+export interface UpdateDishVariantLocaleRequest {
+  name: string;
+  description?: string;
+  sort_order: number;
+}
+
+export interface CreateDishVariantIngredientRequest {
+  item_id: number;
+  quantity: number;
+  unit_id: number;
+  sort_order: number;
+}
+
+export interface UpdateDishVariantIngredientRequest {
+  quantity: number;
+  unit_id: number;
   sort_order: number;
 }
 
@@ -53,23 +93,26 @@ export interface CreateDishVariantRequest {
   sort_order: number;
   price: number;
   is_default: boolean;
-  is_available: boolean;
-  is_featured: boolean;
+  is_veg: boolean;
   locales?: CreateDishVariantLocaleRequest[];
-  recipe: CreateDishRecipeRequest;
+  ingredients?: CreateDishVariantIngredientRequest[];
+}
+
+export interface UpdateDishVariantRequest {
+  sort_order: number;
+  price: number;
+  is_default: boolean;
+  is_veg: boolean;
 }
 
 export interface CreateDishRequest {
   code: string;
   sort_order: number;
-  is_veg?: boolean;
   locales?: CreateDishLocaleRequest[];
-  variants?: CreateDishVariantRequest[];
 }
 
 export interface UpdateDishRequest {
   sort_order: number;
-  is_veg?: boolean;
 }
 
 export const dishesService = {
@@ -80,8 +123,8 @@ export const dishesService = {
     return api.get<PageResponse<Dish>>(`/dishes?${qs}`);
   },
 
-  async get(id: number): Promise<{ dish: Dish }> {
-    return api.get<{ dish: Dish }>(`/dishes/${id}`);
+  async get(id: number): Promise<{ dish: DishDetail }> {
+    return api.get<{ dish: DishDetail }>(`/dishes/${id}`);
   },
 
   async create(body: CreateDishRequest): Promise<MutationResponse> {
@@ -96,6 +139,7 @@ export const dishesService = {
     return api.delete<MutationResponse>(`/dishes/${id}`);
   },
 
+  // Dish locales
   async addLocale(dishId: number, body: CreateDishLocaleRequest): Promise<MutationResponse> {
     return api.post<MutationResponse>(`/dishes/${dishId}/locales`, body);
   },
@@ -106,5 +150,54 @@ export const dishesService = {
 
   async removeLocale(dishId: number, localeId: number): Promise<MutationResponse> {
     return api.delete<MutationResponse>(`/dishes/${dishId}/locales/${localeId}`);
+  },
+
+  // Variants
+  async listVariants(dishId: number, params: ListParams = {}): Promise<PageResponse<DishVariant>> {
+    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
+    const qs = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    return api.get<PageResponse<DishVariant>>(`/dishes/${dishId}/variants?${qs}`);
+  },
+
+  async getVariant(dishId: number, variantId: number): Promise<{ dish_variant: DishVariant }> {
+    return api.get<{ dish_variant: DishVariant }>(`/dishes/${dishId}/variants/${variantId}`);
+  },
+
+  async addVariant(dishId: number, body: CreateDishVariantRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/dishes/${dishId}/variants`, body);
+  },
+
+  async updateVariant(dishId: number, variantId: number, body: UpdateDishVariantRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${dishId}/variants/${variantId}`, body);
+  },
+
+  async removeVariant(dishId: number, variantId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${dishId}/variants/${variantId}`);
+  },
+
+  // Variant locales
+  async addVariantLocale(dishId: number, variantId: number, body: CreateDishVariantLocaleRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/locales`, body);
+  },
+
+  async updateVariantLocale(dishId: number, variantId: number, localeId: number, body: UpdateDishVariantLocaleRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/locales/${localeId}`, body);
+  },
+
+  async removeVariantLocale(dishId: number, variantId: number, localeId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/locales/${localeId}`);
+  },
+
+  // Variant ingredients
+  async addVariantIngredient(dishId: number, variantId: number, body: CreateDishVariantIngredientRequest): Promise<MutationResponse> {
+    return api.post<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/ingredients`, body);
+  },
+
+  async updateVariantIngredient(dishId: number, variantId: number, ingredientId: number, body: UpdateDishVariantIngredientRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/ingredients/${ingredientId}`, body);
+  },
+
+  async removeVariantIngredient(dishId: number, variantId: number, ingredientId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/ingredients/${ingredientId}`);
   },
 };

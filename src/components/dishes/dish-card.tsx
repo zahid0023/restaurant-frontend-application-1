@@ -10,12 +10,13 @@ import type { Dish } from "@/services/dishes";
 export interface DishCardProps {
   dish: Dish;
   defaultName?: string;
+  onOverview?: (dish: Dish) => void;
   onView?: (dish: Dish) => void;
   onDelete?: (dish: Dish) => void;
   onAssignCategories?: (dish: Dish) => void;
 }
 
-export function DishCard({ dish, defaultName, onView, onDelete, onAssignCategories }: DishCardProps) {
+export function DishCard({ dish, defaultName, onOverview, onView, onDelete, onAssignCategories }: DishCardProps) {
   const { t } = useTranslation();
 
   const title = defaultName?.trim() || dish.code;
@@ -32,8 +33,8 @@ export function DishCard({ dish, defaultName, onView, onDelete, onAssignCategori
     <Card
       role="button"
       tabIndex={0}
-      onClick={() => onView?.(dish)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView?.(dish); } }}
+      onClick={() => onOverview?.(dish)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOverview?.(dish); } }}
       className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="flex items-start justify-between">
@@ -67,11 +68,6 @@ export function DishCard({ dish, defaultName, onView, onDelete, onAssignCategori
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">#{dish.sort_order}</Badge>
-          {dish.is_veg && (
-            <Badge variant="outline" className="text-green-600 border-green-600 text-xs">
-              {t("dish.veg")}
-            </Badge>
-          )}
           {onAssignCategories && (
             <Button
               size="sm"
