@@ -18,11 +18,12 @@ export function clearToken(): void {
 
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
     const token = getToken();
+    const isFormData = options.body instanceof FormData;
 
     const res = await fetch(`${BASE_URL}${path}`, {
         ...options,
         headers: {
-            "Content-Type": "application/json",
+            ...(isFormData ? {} : { "Content-Type": "application/json" }),
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options.headers,
         },
@@ -72,4 +73,7 @@ export const api = {
 
     delete: <T>(path: string, options?: RequestInit) =>
         apiFetch<T>(path, { ...options, method: "DELETE" }),
+
+    postForm: <T>(path: string, body: FormData, options?: RequestInit) =>
+        apiFetch<T>(path, { ...options, method: "POST", body }),
 };

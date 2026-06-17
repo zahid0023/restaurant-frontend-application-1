@@ -20,6 +20,7 @@ import type { ImageHostingConfigDialogMode, ImageHostingConfigFormState } from "
 import { ImageHostingConfigGeneralInfo } from "./image-hosting-config-general-info";
 
 export const emptyImageHostingConfigForm: ImageHostingConfigFormState = {
+  name: "",
   provider: "",
   config: {},
 };
@@ -28,6 +29,7 @@ export interface ImageHostingConfigDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: ImageHostingConfigDialogMode;
+  configId?: number;
   form: ImageHostingConfigFormState;
   onFormChange: (form: ImageHostingConfigFormState) => void;
   onSaved?: () => void | Promise<void>;
@@ -37,6 +39,7 @@ export function ImageHostingConfigDialog({
   open,
   onOpenChange,
   mode,
+  configId,
   form,
   onFormChange,
   onSaved,
@@ -44,6 +47,7 @@ export function ImageHostingConfigDialog({
   const { t } = useTranslation();
   const [submitting, setSubmitting] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [providers, setProviders] = useState<ImageHostingProviderInfo[]>([]);
   const providersFetched = useRef(false);
 
@@ -59,13 +63,13 @@ export function ImageHostingConfigDialog({
   }, []);
 
   useEffect(() => {
-    if (open && mode === "view") loadProviders();
-    if (!open) setConfirmClose(false);
+    if (open) loadProviders();
+    if (!open) { setConfirmClose(false); setEditing(false); }
   }, [open, mode, loadProviders]);
 
   const isDirty = mode === "create"
-    ? form.provider !== "" || Object.values(form.config).some((v) => v.trim() !== "")
-    : false;
+    ? form.name.trim() !== "" || form.provider !== "" || Object.values(form.config).some((v) => v.trim() !== "")
+    : editing;
 
   function requestClose() {
     if (isDirty) setConfirmClose(true);
@@ -75,6 +79,7 @@ export function ImageHostingConfigDialog({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (mode !== "create") return;
+    if (!form.name.trim()) { toast.error(t("imageHosting.errName")); return; }
     if (!form.provider) { toast.error(t("imageHosting.errProvider")); return; }
     const providerInfo = providers.find((p) => p.provider === form.provider);
     const requiredKeys = providerInfo?.required_keys ?? [];
@@ -88,7 +93,7 @@ export function ImageHostingConfigDialog({
     try {
       const config: Record<string, string> = {};
       requiredKeys.forEach(({ key }) => { config[key] = form.config[key].trim(); });
-      await imageHostingConfigsService.create({ provider: form.provider as ImageHostingProvider, config });
+      await imageHostingConfigsService.create({ name: form.name.trim(), provider: form.provider as ImageHostingProvider, config });
       toast.success(t("imageHosting.createdToast"));
       onOpenChange(false);
       await onSaved?.();
@@ -99,8 +104,8 @@ export function ImageHostingConfigDialog({
     }
   }
 
-  const headerTitle = mode === "create" ? t("imageHosting.titleCreate") : t("imageHosting.titleView");
-  const headerDesc = mode === "create" ? t("imageHosting.descCreate") : t("imageHosting.descView");
+  const headerTitle = mode === "create" ? t("imageHosting.titleCreate") : editing ? t("imageHosting.titleEdit") : t("imageHosting.titleView");
+  const headerDesc = mode === "create" ? t("imageHosting.descCreate") : editing ? t("imageHosting.descEdit") : t("imageHosting.descView");
 
   return (
     <>
@@ -124,6 +129,10 @@ export function ImageHostingConfigDialog({
                 open={open}
                 providers={providers}
                 onProviderSelectOpen={loadProviders}
+                configId={configId}
+                onSaved={onSaved}
+                editing={editing}
+                onEditingChange={setEditing}
               />
             </div>
             {mode === "create" && (

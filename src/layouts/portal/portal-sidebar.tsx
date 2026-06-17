@@ -42,7 +42,7 @@ const mainNavItems = [
   {
     title: "Basic Info",
     url: "/basic-info",
-    icon: LayoutDashboard,
+    icon: SettingsIcon,
   },
   {
     title: "Image Hosting",

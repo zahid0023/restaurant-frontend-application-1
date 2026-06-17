@@ -19,13 +19,19 @@ export const SECRET_KEY_NAMES = new Set(["secret_key", "api_secret", "api_key"])
 
 export interface ImageHostingConfig {
   id: number;
+  name: string;
   provider: ImageHostingProvider;
   config: Record<string, string>;
 }
 
 export interface CreateImageHostingConfigRequest {
+  name: string;
   provider: ImageHostingProvider;
   config: Record<string, string>;
+}
+
+export interface UpdateImageHostingConfigRequest {
+  name: string;
 }
 
 export const imageHostingConfigsService = {
@@ -45,6 +51,10 @@ export const imageHostingConfigsService = {
 
   async create(body: CreateImageHostingConfigRequest): Promise<MutationResponse> {
     return api.post<MutationResponse>("/restaurant-image-hosting-configs", body);
+  },
+
+  async update(id: number, body: UpdateImageHostingConfigRequest): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/restaurant-image-hosting-configs/${id}`, body);
   },
 
   async remove(id: number): Promise<MutationResponse> {

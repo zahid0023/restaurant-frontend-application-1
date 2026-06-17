@@ -39,6 +39,7 @@ export default function ImageHostingPage() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [mode, setMode] = useState<ImageHostingConfigDialogMode>("create");
+  const [activeConfigId, setActiveConfigId] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<ImageHostingConfigFormState>(emptyImageHostingConfigForm);
 
   const [deleteTarget, setDeleteTarget] = useState<ImageHostingConfig | null>(null);
@@ -69,13 +70,15 @@ export default function ImageHostingPage() {
 
   function openCreate() {
     setMode("create");
+    setActiveConfigId(undefined);
     setForm(emptyImageHostingConfigForm);
     setDialogOpen(true);
   }
 
   function openView(c: ImageHostingConfig) {
     setMode("view");
-    setForm({ provider: c.provider, config: c.config });
+    setActiveConfigId(c.id);
+    setForm({ name: c.name, provider: c.provider, config: c.config });
     setDialogOpen(true);
   }
 
@@ -141,6 +144,7 @@ export default function ImageHostingPage() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         mode={mode}
+        configId={activeConfigId}
         form={form}
         onFormChange={setForm}
         onSaved={refresh}

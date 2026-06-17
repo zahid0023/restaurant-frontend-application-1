@@ -19,14 +19,6 @@ export function ImageHostingConfigCard({ config, onView, onDelete }: ImageHostin
   const avatarText = config.provider.slice(0, 3);
   const configKeyCount = Object.keys(config.config).length;
 
-  // Show first non-secret key value as subtitle hint
-  const nonSecretEntries = Object.entries(config.config).filter(
-    ([k]) => !["secret_key", "api_secret", "api_key"].includes(k)
-  );
-  const subtitle = nonSecretEntries.length > 0
-    ? nonSecretEntries.map(([k, v]) => `${k}: ${v}`).join(" · ")
-    : `ID #${config.id}`;
-
   const handleAction = (e: React.MouseEvent, handler?: (c: ImageHostingConfig) => void) => {
     e.stopPropagation();
     e.preventDefault();
@@ -47,8 +39,8 @@ export function ImageHostingConfigCard({ config, onView, onDelete }: ImageHostin
             {avatarText}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold truncate">{config.provider}</h3>
-            <p className="text-xs text-muted-foreground truncate max-w-[180px]">{subtitle}</p>
+            <h3 className="font-semibold truncate">{config.name}</h3>
+            <p className="text-xs text-muted-foreground truncate max-w-[180px]">{config.provider}</p>
           </div>
         </div>
         <div
