@@ -6,6 +6,7 @@ import {
   FileTextIcon,
   FolderIcon,
   GlobeIcon,
+  ImageIcon,
   LayersIcon,
   LayoutDashboard,
   LayoutTemplateIcon,
@@ -31,13 +32,22 @@ import {
 } from "@/components/ui/sidebar";
 import { SidebarMenuButtonActive } from "@/layouts/portal/sidebar-menu-button-active";
 import { logout } from "@/services/auth";
-import { title } from "process";
 
 const mainNavItems = [
   {
     title: "Dashboard",
     url: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    title: "Basic Info",
+    url: "/basic-info",
+    icon: LayoutDashboard,
+  },
+  {
+    title: "Image Hosting",
+    url: "/image-hosting",
+    icon: ImageIcon,
   },
 ];
 
