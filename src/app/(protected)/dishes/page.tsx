@@ -19,7 +19,6 @@ import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { InfiniteScrollSentinel } from "@/components/ui/infinite-scroll-sentinel";
 import { DishCard } from "@/components/dishes/dish-card";
 import { DishDialog, emptyDishForm } from "@/components/dishes/dish-dialog";
-import { DishOverviewDialog } from "@/components/dishes/dish-overview-dialog";
 import { AssignMenuCategoriesDialog } from "@/components/dishes/assign-menu-categories-dialog";
 import type { DishDialogMode, DishFormState } from "@/components/dishes/types";
 import { dishesService, type Dish } from "@/services/dishes";
@@ -51,7 +50,6 @@ export default function DishesPage() {
   const [activeId, setActiveId] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<DishFormState>(emptyDishForm);
 
-  const [overviewTarget, setOverviewTarget] = useState<Dish | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Dish | null>(null);
   const [assignTarget, setAssignTarget] = useState<Dish | null>(null);
 
@@ -151,6 +149,17 @@ export default function DishesPage() {
     } catch { /* non-blocking */ }
   }
 
+  async function handleToggleFeatured(dish: Dish) {
+    try {
+      await dishesService.setFeatured(dish.id, !dish.is_featured);
+      toast.success(dish.is_featured ? t("dish.unfeaturedToast") : t("dish.featuredToast"));
+      if (view === "by-category") loadGrouped();
+      else reset();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
@@ -246,10 +255,10 @@ export default function DishesPage() {
                   key={d.id}
                   dish={d}
                   defaultName={dishNames[d.id]}
-                  onOverview={(dish) => setOverviewTarget(dish)}
                   onView={openDetail}
                   onDelete={(dish) => setDeleteTarget(dish)}
                   onAssignCategories={(dish) => setAssignTarget(dish)}
+                  onToggleFeatured={handleToggleFeatured}
                 />
               ))}
             </div>
@@ -311,10 +320,10 @@ export default function DishesPage() {
                             key={d.id}
                             dish={d as Dish}
                             defaultName={d.locales?.[0]?.name}
-                            onOverview={() => setOverviewTarget(d as Dish)}
                             onView={() => openDetail(d)}
                             onDelete={() => setDeleteTarget(d as Dish)}
                             onAssignCategories={() => setAssignTarget(d as Dish)}
+                            onToggleFeatured={() => handleToggleFeatured(d as Dish)}
                           />
                         ))}
                       </div>
@@ -326,13 +335,6 @@ export default function DishesPage() {
           </div>
         )
       )}
-
-      <DishOverviewDialog
-        open={!!overviewTarget}
-        onOpenChange={(o) => !o && setOverviewTarget(null)}
-        dish={overviewTarget}
-        dishName={overviewTarget ? (dishNames[overviewTarget.id] || overviewTarget.code) : undefined}
-      />
 
       <DishDialog
         open={dialogOpen}

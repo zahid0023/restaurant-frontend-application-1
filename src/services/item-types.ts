@@ -11,7 +11,7 @@ export interface ItemTypeLocale {
 
 export interface ItemInTypeLocale {
   id: number;
-  locale_id: number;
+  locale_code: string;
   name: string;
   description?: string;
   sort_order: number;
@@ -99,5 +99,11 @@ export const itemTypesService = {
 
   async removeLocale(typeId: number, localeId: number): Promise<MutationResponse> {
     return api.delete<MutationResponse>(`/item-types/${typeId}/locales/${localeId}`);
+  },
+
+  async listItems(typeId: number, params: ListParams = {}): Promise<PageResponse<ItemInType>> {
+    const { page = 0, size = 50, sort_by = "sortOrder", sort_dir = "ASC" } = params;
+    const query = new URLSearchParams({ page: String(page), size: String(size), sort_by, sort_dir });
+    return api.get<PageResponse<ItemInType>>(`/item-types/${typeId}/items?${query}`);
   },
 };

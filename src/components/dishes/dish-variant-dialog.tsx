@@ -20,7 +20,7 @@ import { DishVariantGeneralInfo } from "./dish-variant-general-info";
 import { DishVariantLocaleTranslations, type VariantLocaleFormRow } from "./dish-variant-locale-translations";
 import { DishVariantIngredients } from "./dish-variant-ingredients";
 import { dishesService } from "@/services/dishes";
-import type { DishVariant } from "@/services/dishes";
+import type { DishVariantDetail } from "@/services/dishes";
 import type { Locale } from "@/services/locales";
 import type { Unit } from "@/services/units";
 import type { IngredientRow } from "./ingredients-table";
@@ -45,7 +45,7 @@ export interface DishVariantDialogProps {
   onOpenChange: (open: boolean) => void;
   mode: "create" | "view";
   dishId: number;
-  variant?: DishVariant;
+  variant?: DishVariantDetail;
   availableLocales: Locale[];
   unitsByTypeId: Record<number, Unit[]>;
   onUnitTypeLoad?: (unitTypeId: number, units: Unit[]) => void;
@@ -256,7 +256,7 @@ export function DishVariantDialog({
                   variantId={variant?.id}
                   rows={mode === "create" ? form.ingredients : undefined}
                   onRowsChange={(rows) => setForm((prev) => ({ ...prev, ingredients: rows }))}
-                  savedRows={mode === "view" ? (variant?.ingredients ?? []) : undefined}
+                  ingredientDetails={mode === "view" ? (variant?.ingredients ?? []) : undefined}
                   unitsByTypeId={unitsByTypeId}
                   onUnitTypeLoad={onUnitTypeLoad}
                   onSaved={onSaved}

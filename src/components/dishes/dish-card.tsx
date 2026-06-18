@@ -1,6 +1,7 @@
 "use client";
 
-import { Eye, Trash2, Tag } from "lucide-react";
+import { Eye, Star, Trash2, Tag } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,18 +11,21 @@ import type { Dish } from "@/services/dishes";
 export interface DishCardProps {
   dish: Dish;
   defaultName?: string;
-  onOverview?: (dish: Dish) => void;
   onView?: (dish: Dish) => void;
   onDelete?: (dish: Dish) => void;
   onAssignCategories?: (dish: Dish) => void;
+  onToggleFeatured?: (dish: Dish) => void;
 }
 
-export function DishCard({ dish, defaultName, onOverview, onView, onDelete, onAssignCategories }: DishCardProps) {
+export function DishCard({ dish, defaultName, onView, onDelete, onAssignCategories, onToggleFeatured }: DishCardProps) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   const title = defaultName?.trim() || dish.code;
   const subtitle = defaultName?.trim() ? `${dish.code} · ID #${dish.id}` : `ID #${dish.id}`;
   const localeCount = dish.locales?.length ?? 0;
+
+  const goToDetail = () => router.push(`/dishes/${dish.id}`);
 
   const handleAction = (e: React.MouseEvent, handler?: (d: Dish) => void) => {
     e.stopPropagation();
@@ -33,8 +37,8 @@ export function DishCard({ dish, defaultName, onOverview, onView, onDelete, onAs
     <Card
       role="button"
       tabIndex={0}
-      onClick={() => onOverview?.(dish)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOverview?.(dish); } }}
+      onClick={goToDetail}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); goToDetail(); } }}
       className="group p-5 hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
       <div className="flex items-start justify-between">
@@ -52,6 +56,17 @@ export function DishCard({ dish, defaultName, onOverview, onView, onDelete, onAs
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >
+          {onToggleFeatured && (
+            <Button
+              size="icon"
+              variant="ghost"
+              className={`h-8 w-8 ${dish.is_featured ? "text-yellow-500 hover:text-yellow-600" : "text-muted-foreground hover:text-yellow-500"}`}
+              title={dish.is_featured ? t("dish.unmarkFeatured") : t("dish.markFeatured")}
+              onClick={(e) => handleAction(e, onToggleFeatured)}
+            >
+              <Star className={`h-3.5 w-3.5 ${dish.is_featured ? "fill-current" : ""}`} />
+            </Button>
+          )}
           {onView && (
             <Button size="icon" variant="ghost" className="h-8 w-8" onClick={(e) => handleAction(e, onView)}>
               <Eye className="h-3.5 w-3.5" />
@@ -68,6 +83,12 @@ export function DishCard({ dish, defaultName, onOverview, onView, onDelete, onAs
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">#{dish.sort_order}</Badge>
+          {dish.is_featured && (
+            <Badge variant="outline" className="gap-1 text-yellow-600 border-yellow-400 bg-yellow-50 dark:bg-yellow-950/30 dark:border-yellow-700 dark:text-yellow-400">
+              <Star className="h-3 w-3 fill-current" />
+              {t("dish.featured")}
+            </Badge>
+          )}
           {onAssignCategories && (
             <Button
               size="sm"

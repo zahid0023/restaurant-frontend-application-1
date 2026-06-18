@@ -152,7 +152,6 @@ export default function UnitTypeDetailPage({
     }
   }
 
-  const unitTypeDisplayName = unitType?.locales[0]?.name ?? unitType?.code ?? `#${unitTypeId}`;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -169,7 +168,7 @@ export default function UnitTypeDetailPage({
         {unitType ? (
           <div>
             <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("common.admin")}</p>
-            <h1 className="text-3xl font-semibold tracking-tight">{unitTypeDisplayName}</h1>
+            <h1 className="text-3xl font-semibold tracking-tight">{unitType?.locales[0]?.name ?? unitType?.code ?? `#${unitTypeId}`}</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-muted-foreground font-mono">{unitType.code}</span>
               <Badge variant="secondary" className="text-xs">#{unitType.sort_order}</Badge>

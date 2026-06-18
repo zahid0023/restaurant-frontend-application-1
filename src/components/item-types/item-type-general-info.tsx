@@ -58,7 +58,7 @@ export function ItemTypeGeneralInfo({
         is_consumable: localGeneral.is_consumable,
         sort_order: Number(localGeneral.sort_order) || 0,
       });
-      toast.success(t("common.save"));
+      toast.success(t("common.saved"));
       onEditingChange(false);
       onFormChange({ is_consumable: localGeneral.is_consumable, sort_order: Number(localGeneral.sort_order) || 0 });
       await onSaved?.();

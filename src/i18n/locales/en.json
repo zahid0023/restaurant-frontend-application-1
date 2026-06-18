@@ -662,7 +662,13 @@
     "variantStepDetails": "Details",
     "variantStepIngredients": "Ingredients",
     "errAtLeastOneLocale": "At least one translation is required.",
-    "errAtLeastOneIngredient": "At least one ingredient is required."
+    "errAtLeastOneIngredient": "At least one ingredient is required.",
+    "featured": "Featured",
+    "markFeatured": "Mark as featured",
+    "unmarkFeatured": "Remove from featured",
+    "featuredToast": "Marked as featured",
+    "unfeaturedToast": "Removed from featured",
+    "backToDishes": "Back to dishes"
   },
   "imageHosting": {
     "pageTitle": "Image Hosting Configs",

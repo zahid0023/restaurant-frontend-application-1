@@ -528,7 +528,13 @@
     "variantStepDetails": "বিবরণ",
     "variantStepIngredients": "উপাদান",
     "errAtLeastOneLocale": "কমপক্ষে একটি অনুবাদ প্রয়োজন।",
-    "errAtLeastOneIngredient": "কমপক্ষে একটি উপাদান প্রয়োজন।"
+    "errAtLeastOneIngredient": "কমপক্ষে একটি উপাদান প্রয়োজন।",
+    "featured": "ফিচার্ড",
+    "markFeatured": "ফিচার্ড হিসেবে চিহ্নিত করুন",
+    "unmarkFeatured": "ফিচার্ড থেকে সরান",
+    "featuredToast": "ফিচার্ড হিসেবে চিহ্নিত হয়েছে",
+    "unfeaturedToast": "ফিচার্ড থেকে সরানো হয়েছে",
+    "backToDishes": "ডিশে ফিরে যান"
   },
   "restaurantInfo": {
     "pageTitle": "রেস্তোরাঁর মূল তথ্য",

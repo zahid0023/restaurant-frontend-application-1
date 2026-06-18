@@ -45,6 +45,7 @@ export default function ItemTypeDetailPage({
   const { t } = useTranslation();
 
   const [itemType, setItemType] = useState<ItemType | null>(null);
+  const [items, setItems] = useState<ItemInType[]>([]);
   const [availableLocales, setAvailableLocales] = useState<Locale[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,24 +61,26 @@ export default function ItemTypeDetailPage({
   async function refresh() {
     setLoading(true);
     try {
-      const res = await itemTypesService.get(itemTypeId);
-      setItemType(res.item_type);
-      setForm((prev) => {
-        if (!dialogOpen || activeItemId == null) return prev;
-        const updatedItem = res.item_type.items?.find((i) => i.id === activeItemId);
-        if (!updatedItem) return prev;
-        return {
+      const [typeRes, itemsRes] = await Promise.all([
+        itemTypesService.get(itemTypeId),
+        itemTypesService.listItems(itemTypeId, { size: 50 }),
+      ]);
+      setItemType(typeRes.item_type);
+      setItems(itemsRes.data);
+      if (dialogOpen && activeItemId != null) {
+        const { item } = await itemsService.get(activeItemId);
+        setForm((prev) => ({
           ...prev,
-          sort_order: updatedItem.sort_order,
-          locales: updatedItem.locales.map((l) => ({
+          sort_order: item.sort_order,
+          locales: item.locales.map((l) => ({
             id: l.id,
             locale_id: l.locale_id,
             name: l.name,
             description: l.description ?? "",
             sort_order: l.sort_order,
           })),
-        };
-      });
+        }));
+      }
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -92,7 +95,6 @@ export default function ItemTypeDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemTypeId]);
 
-  const items = itemType?.items ?? [];
 
   const itemNames = useMemo(() => {
     const out: Record<number, string> = {};
@@ -121,9 +123,10 @@ export default function ItemTypeDetailPage({
       id: item.id,
       code: item.code,
       sort_order: item.sort_order,
+      unit_type: item.unit_type,
       locales: item.locales.map((l) => ({
         id: l.id,
-        locale_code: "",
+        locale_code: l.locale_code,
         name: l.name,
         description: l.description,
         sort_order: l.sort_order,
@@ -138,25 +141,30 @@ export default function ItemTypeDetailPage({
     setDialogOpen(true);
   }
 
-  function openView(summary: ItemSummary) {
-    const full = items.find((i) => i.id === summary.id);
-    if (!full) return;
-    setDialogMode("view");
-    setActiveItemId(full.id);
-    setForm({
-      code: full.code,
-      item_type_id: itemTypeId,
-      unit_type_id: full.unit_type.id,
-      sort_order: full.sort_order,
-      locales: full.locales.map((l) => ({
-        id: l.id,
-        locale_id: l.locale_id,
-        name: l.name,
-        description: l.description ?? "",
-        sort_order: l.sort_order,
-      })),
-    });
-    setDialogOpen(true);
+  async function openView(summary: ItemSummary) {
+    const listItem = items.find((i) => i.id === summary.id);
+    if (!listItem) return;
+    try {
+      const { item } = await itemsService.get(listItem.id);
+      setDialogMode("view");
+      setActiveItemId(item.id);
+      setForm({
+        code: item.code,
+        item_type_id: itemTypeId,
+        unit_type_id: listItem.unit_type.id,
+        sort_order: item.sort_order,
+        locales: item.locales.map((l) => ({
+          id: l.id,
+          locale_id: l.locale_id,
+          name: l.name,
+          description: l.description ?? "",
+          sort_order: l.sort_order,
+        })),
+      });
+      setDialogOpen(true);
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
   }
 
   async function confirmDelete() {

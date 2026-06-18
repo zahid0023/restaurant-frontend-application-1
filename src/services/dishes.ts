@@ -13,6 +13,7 @@ export interface Dish {
   id: number;
   code: string;
   sort_order: number;
+  is_featured: boolean;
   locales?: DishLocale[];
 }
 
@@ -31,6 +32,37 @@ export interface DishVariantIngredient {
   quantity: number;
   unit_id: number;
   sort_order: number;
+}
+
+export interface DishVariantIngredientDetail {
+  id: number;
+  item: {
+    id: number;
+    code: string;
+    sort_order: number;
+    locales: { id: number; locale_id: number; name: string; sort_order: number }[];
+  };
+  quantity: number;
+  unit: {
+    id: number;
+    code: string;
+    is_base: boolean;
+    sort_order: number;
+    unit_type: { id: number; code: string; sort_order: number };
+    locales: { id: number; locale_id: number; name: string; sort_order: number }[];
+  };
+  sort_order: number;
+}
+
+export interface DishVariantDetail {
+  id: number;
+  code: string;
+  sort_order: number;
+  price: number;
+  is_default: boolean;
+  is_veg: boolean;
+  locales?: DishVariantLocale[];
+  ingredients?: DishVariantIngredientDetail[];
 }
 
 export interface DishVariant {
@@ -115,6 +147,10 @@ export interface UpdateDishRequest {
   sort_order: number;
 }
 
+export interface SetDishFeaturedRequest {
+  is_featured: boolean;
+}
+
 export const dishesService = {
   async list(params: ListParams = {}): Promise<PageResponse<Dish>> {
     const { page = 0, size = 20, sort_by = "sortOrder", sort_dir = "ASC", query } = params;
@@ -139,6 +175,10 @@ export const dishesService = {
     return api.delete<MutationResponse>(`/dishes/${id}`);
   },
 
+  async setFeatured(id: number, is_featured: boolean): Promise<MutationResponse> {
+    return api.patch<MutationResponse>(`/dishes/${id}/featured`, { is_featured });
+  },
+
   // Dish locales
   async addLocale(dishId: number, body: CreateDishLocaleRequest): Promise<MutationResponse> {
     return api.post<MutationResponse>(`/dishes/${dishId}/locales`, body);
@@ -159,8 +199,8 @@ export const dishesService = {
     return api.get<PageResponse<DishVariant>>(`/dishes/${dishId}/variants?${qs}`);
   },
 
-  async getVariant(dishId: number, variantId: number): Promise<{ dish_variant: DishVariant }> {
-    return api.get<{ dish_variant: DishVariant }>(`/dishes/${dishId}/variants/${variantId}`);
+  async getVariant(dishId: number, variantId: number): Promise<{ dish_variant: DishVariantDetail }> {
+    return api.get<{ dish_variant: DishVariantDetail }>(`/dishes/${dishId}/variants/${variantId}`);
   },
 
   async addVariant(dishId: number, body: CreateDishVariantRequest): Promise<MutationResponse> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Languages, Trash2 } from "lucide-react";
+import { Eye, Languages, Star, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,16 +29,26 @@ export function DishVariantCard({ variant, availableLocales, unitsByTypeId, onVi
       tabIndex={0}
       onClick={onView}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onView(); } }}
-      className="group overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      className="group overflow-hidden flex flex-col cursor-pointer hover:shadow-lg transition-all hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
     >
-      {/* Card header */}
+      {/* Veg / non-veg accent stripe */}
+      <div className={`h-1 w-full shrink-0 ${variant.is_veg ? "bg-green-500" : "bg-red-400"}`} />
+
+      {/* Header */}
       <div className="flex items-start justify-between p-4 pb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-semibold shrink-0 text-xs">
-            {variant.code.slice(0, 3)}
+          <div className={`h-10 w-10 rounded-xl flex items-center justify-center font-bold shrink-0 text-xs ${variant.is_default ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary"}`}>
+            {variant.is_default ? <Star className="h-4 w-4 fill-current" /> : variant.code.slice(0, 3)}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-sm truncate">{displayName}</p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-semibold text-sm truncate">{displayName}</p>
+              {variant.is_default && (
+                <span className="text-[10px] font-bold uppercase tracking-wide text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                  {t("dish.variantDefault")}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground font-mono">{variant.code}</p>
           </div>
         </div>
@@ -56,25 +66,27 @@ export function DishVariantCard({ variant, availableLocales, unitsByTypeId, onVi
         </div>
       </div>
 
-      {/* General info */}
-      <div className="px-4 pb-3 space-y-2">
-        <div className="flex flex-wrap gap-1.5">
-          <span className="text-sm font-semibold tabular-nums">{Number(variant.price).toFixed(2)}</span>
-          <Badge variant="secondary" className="text-xs">#{variant.sort_order}</Badge>
-          {variant.is_default && <Badge variant="secondary" className="text-xs">{t("dish.variantDefault")}</Badge>}
-          {variant.is_veg ? (
-            <Badge variant="outline" className="text-xs text-green-600 border-green-600">{t("dish.veg")}</Badge>
-          ) : (
-            <Badge variant="outline" className="text-xs text-muted-foreground">{t("dish.notVeg")}</Badge>
-          )}
+      {/* Price + veg pill */}
+      <div className="mx-4 mb-3 rounded-xl bg-muted/60 px-3 py-2.5 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">{t("dish.variantPrice")}</p>
+          <p className="text-2xl font-extrabold tabular-nums leading-none tracking-tight">{Number(variant.price).toFixed(2)}</p>
+        </div>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold shrink-0 ${
+          variant.is_veg
+            ? "bg-green-500/10 text-green-600 border border-green-500/30"
+            : "bg-red-500/10 text-red-500 border border-red-500/30"
+        }`}>
+          <div className={`h-2 w-2 rounded-full shrink-0 ${variant.is_veg ? "bg-green-500" : "bg-red-500"}`} />
+          {variant.is_veg ? t("dish.veg") : t("dish.notVeg")}
         </div>
       </div>
 
-      {/* Locale count */}
-      <div className="px-4 pb-3 border-t pt-3">
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Languages className="h-3 w-3" />
-          <span>{localeCount} {localeCount === 1 ? t("dish.locale") : t("dish.locales")}</span>
+      {/* Footer */}
+      <div className="px-4 pb-3 border-t pt-3 flex items-center justify-between gap-2 mt-auto">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+          <Languages className="h-3 w-3 shrink-0" />
+          <span className="shrink-0">{localeCount} {localeCount === 1 ? t("dish.locale") : t("dish.locales")}</span>
           {localeCount > 0 && variant.locales?.[0] && (
             <>
               <span>·</span>
@@ -82,11 +94,12 @@ export function DishVariantCard({ variant, availableLocales, unitsByTypeId, onVi
             </>
           )}
         </div>
+        <Badge variant="secondary" className="text-xs shrink-0">#{variant.sort_order}</Badge>
       </div>
 
       {/* Ingredients */}
       {ingredients.length > 0 && (
-        <div className="px-4 pb-3 border-t pt-3">
+        <div className="px-4 pb-3 border-t pt-2.5">
           <div className="flex flex-wrap gap-1">
             {ingredients.slice(0, 4).map((ing) => {
               let unitCode = "";

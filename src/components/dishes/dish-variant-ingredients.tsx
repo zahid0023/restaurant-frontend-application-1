@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { dishesService } from "@/services/dishes";
-import type { DishVariantIngredient } from "@/services/dishes";
+import type { DishVariantIngredient, DishVariantIngredientDetail } from "@/services/dishes";
 import { itemsService, type ItemSummary } from "@/services/items";
 import type { Unit } from "@/services/units";
 import { IngredientsTable, type IngredientRow } from "./ingredients-table";
@@ -10,14 +10,14 @@ import { IngredientsTable, type IngredientRow } from "./ingredients-table";
 export interface DishVariantIngredientsProps {
   unitsByTypeId: Record<number, Unit[]>;
   onUnitTypeLoad?: (unitTypeId: number, units: Unit[]) => void;
-  // create mode
   mode: "create" | "view";
+  // create mode
   rows?: IngredientRow[];
   onRowsChange?: (rows: IngredientRow[]) => void;
-  // view mode
+  // view mode — full detail objects already fetched by the parent page
   dishId?: number;
   variantId?: number;
-  savedRows?: DishVariantIngredient[];
+  ingredientDetails?: DishVariantIngredientDetail[];
   onSaved?: () => void | Promise<void>;
 }
 
@@ -29,11 +29,58 @@ export function DishVariantIngredients({
   onRowsChange,
   dishId,
   variantId,
-  savedRows = [],
+  ingredientDetails = [],
   onSaved,
 }: DishVariantIngredientsProps) {
   const [availableItems, setAvailableItems] = useState<ItemSummary[]>([]);
   const loadedRef = useRef(false);
+
+  // Derive flat rows from the embedded detail objects the parent already fetched
+  const savedRows: DishVariantIngredient[] = ingredientDetails.map((ing) => ({
+    id: ing.id,
+    dish_variant_id: variantId ?? 0,
+    item_id: ing.item.id,
+    quantity: ing.quantity,
+    unit_id: ing.unit.id,
+    sort_order: ing.sort_order,
+  }));
+
+  // Seed availableItems and unitsByTypeId from embedded data so names display immediately
+  useEffect(() => {
+    if (!ingredientDetails.length) return;
+
+    if (!loadedRef.current) {
+      setAvailableItems(
+        ingredientDetails.map((ing) => ({
+          id: ing.item.id,
+          code: ing.item.code,
+          sort_order: ing.item.sort_order,
+          locales: ing.item.locales,
+        }))
+      );
+    }
+
+    const byType: Record<number, Unit[]> = {};
+    for (const ing of ingredientDetails) {
+      const u = ing.unit;
+      const utId = u.unit_type.id;
+      if (!byType[utId]) byType[utId] = [];
+      if (!byType[utId].some((x) => x.id === u.id)) {
+        byType[utId].push({
+          id: u.id,
+          code: u.code,
+          is_base: u.is_base,
+          sort_order: u.sort_order,
+          unit_type_id: utId,
+          locales: u.locales,
+        });
+      }
+    }
+    for (const [utId, units] of Object.entries(byType)) {
+      onUnitTypeLoad?.(Number(utId), units);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ingredientDetails]);
 
   async function loadItems() {
     if (loadedRef.current) return;

@@ -109,7 +109,7 @@ export function ItemTypeLocaleTranslations({
         });
       }
       setRowEditData((prev) => { const n = { ...prev }; delete n[key]; return n; });
-      toast.success(t("common.save"));
+      toast.success(t("common.saved"));
       await onSaved?.();
     } catch (err) {
       toast.error((err as Error).message);
