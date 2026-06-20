@@ -40,6 +40,8 @@ export interface ItemDialogProps {
   onSaved?: () => void | Promise<void>;
 }
 
+const randomCode = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+
 export function ItemDialog({
   open,
   onOpenChange,
@@ -57,12 +59,15 @@ export function ItemDialog({
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
+    if (open && mode === "create") {
+      onFormChange({ ...form, code: randomCode() });
+    }
     if (!open) {
       setGeneralEditing(false);
       setTranslationsEditing(false);
       setConfirmClose(false);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = mode === "create"
     ? form.code.trim() !== "" || String(form.item_type_id) !== "" || String(form.unit_type_id) !== "" || form.locales.length > 0

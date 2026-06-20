@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { UtensilsCrossed } from "lucide-react";
 import {
@@ -43,6 +44,8 @@ export interface DishDialogProps {
   onSaved?: () => void | Promise<void>;
 }
 
+const randomCode = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+
 export function DishDialog({
   open,
   onOpenChange,
@@ -54,6 +57,7 @@ export function DishDialog({
   onSaved,
 }: DishDialogProps) {
   const { t } = useTranslation();
+  const router = useRouter();
 
   const [submitting, setSubmitting] = useState(false);
   const [generalEditing, setGeneralEditing] = useState(false);
@@ -61,12 +65,15 @@ export function DishDialog({
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
+    if (open && mode === "create") {
+      onFormChange({ ...form, code: randomCode() });
+    }
     if (!open) {
       setGeneralEditing(false);
       setTranslationsEditing(false);
       setConfirmClose(false);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = mode === "create"
     ? form.code.trim() !== "" || form.locales.length > 0
@@ -88,7 +95,7 @@ export function DishDialog({
     setSubmitting(true);
     try {
       const code = form.code.trim().toUpperCase();
-      await dishesService.create({
+      const res = await dishesService.create({
         code,
         sort_order: Number(form.sort_order) || 0,
         locales: form.locales.map((row) => ({
@@ -100,7 +107,7 @@ export function DishDialog({
       });
       toast.success(t("dish.createdToast"));
       onOpenChange(false);
-      await onSaved?.();
+      router.push(`/dishes/${res.id}`);
     } catch (err) {
       toast.error((err as Error).message);
     } finally {

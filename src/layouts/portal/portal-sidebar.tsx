@@ -49,6 +49,11 @@ const mainNavItems = [
     url: "/image-hosting",
     icon: ImageIcon,
   },
+  {
+    title: "Restaurant Images",
+    url: "/restaurant-images",
+    icon: ImageIcon,
+  },
 ];
 
 const diningSpaceNavItems = [

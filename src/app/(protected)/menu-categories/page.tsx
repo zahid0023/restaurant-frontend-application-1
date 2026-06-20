@@ -24,6 +24,7 @@ import {
 import { useInfiniteScroll } from "@/hooks/use-infinite-scroll";
 import { InfiniteScrollSentinel } from "@/components/ui/infinite-scroll-sentinel";
 import { MenuCategoryCard } from "@/components/menu-categories/menu-category-card";
+import { AssignDishesDialog } from "@/components/menu-categories/assign-dishes-dialog";
 import { MenuCategoryDialog, emptyMenuCategoryForm } from "@/components/menu-categories/menu-category-dialog";
 import type { MenuCategoryDialogMode, MenuCategoryFormState } from "@/components/menu-categories/types";
 import { menuCategoriesService } from "@/services/menu-categories";
@@ -38,7 +39,7 @@ import { useTranslation } from "react-i18next";
 type SearchField = "all" | "code" | "name";
 type CategoryView = "all" | "by-menu-type";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 50;
 
 interface MenuGroup {
   menu: Menu;
@@ -78,6 +79,7 @@ export default function MenuCategoriesPage() {
   const [activeId, setActiveId] = useState<number | undefined>(undefined);
   const [form, setForm] = useState<MenuCategoryFormState>(emptyMenuCategoryForm);
   const [deleteTarget, setDeleteTarget] = useState<MenuCategory | null>(null);
+  const [assignTarget, setAssignTarget] = useState<MenuCategory | null>(null);
 
   // Load By Menu Type: GET /menus?detail=WITH_CATEGORIES
   async function loadByMenuType() {
@@ -286,6 +288,7 @@ export default function MenuCategoriesPage() {
                   defaultName={categoryNames[c.id]}
                   onView={openDetail}
                   onDelete={(cat) => setDeleteTarget(cat)}
+                  onAssignDishes={(cat) => setAssignTarget(cat)}
                 />
               ))}
             </div>
@@ -328,6 +331,7 @@ export default function MenuCategoriesPage() {
                         defaultName={categoryNames[c.id]}
                         onView={openDetail}
                         onDelete={(cat) => setDeleteTarget(cat)}
+                        onAssignDishes={(cat) => setAssignTarget(cat)}
                       />
                     ))}
                   </div>
@@ -349,6 +353,15 @@ export default function MenuCategoriesPage() {
         availableMenuTypes={availableMenuTypes}
         onSaved={refresh}
       />
+
+      {assignTarget && (
+        <AssignDishesDialog
+          open={!!assignTarget}
+          onOpenChange={(o) => !o && setAssignTarget(null)}
+          categoryId={assignTarget.id}
+          categoryName={assignTarget.locales?.[0]?.name ?? assignTarget.code}
+        />
+      )}
 
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>

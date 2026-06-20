@@ -41,6 +41,8 @@ export interface MenuCategoryDialogProps {
   onSaved?: () => void | Promise<void>;
 }
 
+const randomCode = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+
 export function MenuCategoryDialog({
   open,
   onOpenChange,
@@ -59,12 +61,15 @@ export function MenuCategoryDialog({
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
+    if (open && mode === "create") {
+      onFormChange({ ...form, code: randomCode() });
+    }
     if (!open) {
       setGeneralEditing(false);
       setTranslationsEditing(false);
       setConfirmClose(false);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = mode === "create"
     ? form.menu_type_id !== "" || form.code.trim() !== "" || form.locales.length > 0

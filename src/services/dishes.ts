@@ -130,6 +130,22 @@ export interface CreateDishVariantRequest {
   ingredients?: CreateDishVariantIngredientRequest[];
 }
 
+export interface DishVariantImage {
+  id: number;
+  config_id?: number;
+  dish_variant_id?: number;
+  external_id: string;
+  url: string;
+  caption?: string;
+  sort_order: number;
+}
+
+export interface VariantImageMeta {
+  client_image_id: string;
+  caption?: string;
+  sort_order?: number;
+}
+
 export interface UpdateDishVariantRequest {
   sort_order: number;
   price: number;
@@ -207,6 +223,22 @@ export const dishesService = {
     return api.post<MutationResponse>(`/dishes/${dishId}/variants`, body);
   },
 
+  async addVariantWithImages(
+    dishId: number,
+    data: CreateDishVariantRequest,
+    configId: number,
+    images: File[],
+    imageMetas: VariantImageMeta[],
+  ): Promise<MutationResponse> {
+    const form = new FormData();
+    form.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+    for (const file of images) {
+      form.append("images", file, file.name);
+    }
+    form.append("image-metas", new Blob([JSON.stringify(imageMetas)], { type: "application/json" }));
+    return api.postForm<MutationResponse>(`/dishes/${dishId}/variants?config-id=${configId}`, form);
+  },
+
   async updateVariant(dishId: number, variantId: number, body: UpdateDishVariantRequest): Promise<MutationResponse> {
     return api.put<MutationResponse>(`/dishes/${dishId}/variants/${variantId}`, body);
   },
@@ -239,5 +271,38 @@ export const dishesService = {
 
   async removeVariantIngredient(dishId: number, variantId: number, ingredientId: number): Promise<MutationResponse> {
     return api.delete<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/ingredients/${ingredientId}`);
+  },
+
+  // Variant images
+  async uploadVariantImages(
+    dishId: number,
+    variantId: number,
+    configId: number,
+    images: File[],
+    metas: VariantImageMeta[],
+  ): Promise<DishVariantImage[]> {
+    const form = new FormData();
+    for (const file of images) {
+      form.append("images", file, file.name);
+    }
+    form.append("meta", new Blob([JSON.stringify(metas)], { type: "application/json" }));
+    return api.postForm<DishVariantImage[]>(`/dishes/${dishId}/variants/${variantId}/images?config_id=${configId}`, form);
+  },
+
+  async listVariantImages(dishId: number, variantId: number): Promise<PageResponse<DishVariantImage>> {
+    return api.get<PageResponse<DishVariantImage>>(`/dishes/${dishId}/variants/${variantId}/images`);
+  },
+
+  async updateVariantImage(
+    dishId: number,
+    variantId: number,
+    imageId: number,
+    body: { caption?: string; sort_order: number },
+  ): Promise<MutationResponse> {
+    return api.put<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/images/${imageId}`, body);
+  },
+
+  async deleteVariantImage(dishId: number, variantId: number, imageId: number): Promise<MutationResponse> {
+    return api.delete<MutationResponse>(`/dishes/${dishId}/variants/${variantId}/images/${imageId}`);
   },
 };

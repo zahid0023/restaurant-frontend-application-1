@@ -46,6 +46,8 @@ export interface DiningSpaceDialogProps {
   onSaved?: () => void | Promise<void>;
 }
 
+const randomCode = () => Math.random().toString(36).slice(2, 10).toUpperCase();
+
 export function DiningSpaceDialog({
   open,
   onOpenChange,
@@ -65,12 +67,15 @@ export function DiningSpaceDialog({
   const [confirmClose, setConfirmClose] = useState(false);
 
   useEffect(() => {
+    if (open && mode === "create") {
+      onFormChange({ ...form, code: randomCode() });
+    }
     if (!open) {
       setGeneralEditing(false);
       setTranslationsEditing(false);
       setConfirmClose(false);
     }
-  }, [open]);
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isDirty = mode === "create"
     ? form.code.trim() !== "" || String(form.dining_space_type_id) !== "" || form.locales.length > 0

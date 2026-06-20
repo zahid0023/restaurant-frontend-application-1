@@ -1,6 +1,6 @@
 "use client";
 
-import { Eye, Trash2 } from "lucide-react";
+import { Eye, Trash2, UtensilsCrossed } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +12,10 @@ export interface MenuCategoryCardProps {
   defaultName?: string;
   onView?: (c: MenuCategory) => void;
   onDelete?: (c: MenuCategory) => void;
+  onAssignDishes?: (c: MenuCategory) => void;
 }
 
-export function MenuCategoryCard({ category, defaultName, onView, onDelete }: MenuCategoryCardProps) {
+export function MenuCategoryCard({ category, defaultName, onView, onDelete, onAssignDishes }: MenuCategoryCardProps) {
   const { t } = useTranslation();
   const c = category;
 
@@ -75,7 +76,20 @@ export function MenuCategoryCard({ category, defaultName, onView, onDelete }: Me
       </div>
 
       <div className="mt-4 pt-3 border-t flex items-center justify-between">
-        <Badge variant="secondary">#{c.sort_order}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">#{c.sort_order}</Badge>
+          {onAssignDishes && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-6 text-xs gap-1 px-2 text-muted-foreground hover:text-foreground"
+              onClick={(e) => handleAction(e, onAssignDishes)}
+            >
+              <UtensilsCrossed className="h-3 w-3" />
+              {t("menuCategoryDish.assignDishes")}
+            </Button>
+          )}
+        </div>
         <span className="text-xs text-muted-foreground">
           {c.locales?.length ?? 0} locale{(c.locales?.length ?? 0) !== 1 ? "s" : ""}
         </span>
