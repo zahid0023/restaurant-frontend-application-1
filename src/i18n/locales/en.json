@@ -821,6 +821,28 @@
     "errVariantCode": "Variant row {{n}}: code is required",
     "errVariantQty": "Variant row {{n}}: quantity value is required"
   },
+  "operatingHours": {
+    "pageTitle": "Operating Hours",
+    "pageSubtitle": "Set weekly opening times and closed days for your restaurant.",
+    "editSchedule": "Edit schedule",
+    "saveSchedule": "Save schedule",
+    "savedToast": "Schedule saved",
+    "open": "Open",
+    "closed": "Closed",
+    "unscheduled": "Unscheduled",
+    "addSlot": "Add slot",
+    "slot": "Slot",
+    "openTime": "Open time",
+    "closeTime": "Close time",
+    "label": "Label (optional)",
+    "labelPlaceholder": "e.g. Breakfast, Lunch, Dinner, Break",
+    "closesNextDay": "Closes next day",
+    "breakPeriod": "Break / closed period",
+    "note": "Note (optional)",
+    "notePlaceholder": "e.g. Weekly off",
+    "noSlots": "No time slots configured.",
+    "noSlotsHint": "No time slots — day will be treated as unscheduled."
+  },
   "restaurantImages": {
     "pageTitle": "Restaurant Images",
     "pageSubtitle": "Upload and manage the restaurant's image gallery.",

@@ -2,6 +2,7 @@
 
 import {
   BlocksIcon,
+  ClockIcon,
   CreditCardIcon,
   FileTextIcon,
   FolderIcon,
@@ -53,6 +54,11 @@ const mainNavItems = [
     title: "Restaurant Images",
     url: "/restaurant-images",
     icon: ImageIcon,
+  },
+  {
+    title: "Operating Hours",
+    url: "/operating-hours",
+    icon: ClockIcon,
   },
 ];
 
